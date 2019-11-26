@@ -37,7 +37,16 @@ public class PoseVal : MonoBehaviour
 
         _slider.value = _sliderVal;*/
 
-        var pose = _TM.GetThingPose(ThingId);
-        TextObject.text = null == pose ? "---" : pose.ToString();
+        //var pose = _TM.GetThingPose(ThingId) + "\r\nnext line +\r\n line three";
+        //TextObject.text = null == pose ? "---" : pose.ToString();
+
+        string outText = "";
+
+        var things = _TM.GetThings();
+
+        foreach (var thing in things)
+            outText += thing.Pose.ToString() + "\r\n";
+
+        TextObject.text = outText;
     }
 }

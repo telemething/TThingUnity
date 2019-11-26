@@ -194,6 +194,20 @@ public class ThingPose
     //*************************************************************************
     public override string ToString()
     {
-        return string.Format($"Lat:{_pointGeo.Lat / 10e6} Lon:{_pointGeo.Lon / 10e6} Alt:{_pointGeo.Alt / 10e2}");
+        //return string.Format($"Lat:{_pointGeo.Lat / 10e6} Lon:{_pointGeo.Lon / 10e6} Alt:{_pointGeo.Alt / 10e2}");
+        return string.Format($"Lat:{(_pointGeo.Lat):F6} Lon:{(_pointGeo.Lon):F6} Alt:{(_pointGeo.Alt):F2} N: {_pointEnu.N:F1}  E: {_pointEnu.E:F1}  U: {_pointEnu.U:F1} ");
+    }
+
+    //*************************************************************************
+    ///
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    /// 
+    //*************************************************************************
+    public string ToStringExt()
+    {
+        return string.Format($"Lat:{_pointGeo.Lat / 10e6} Lon:{_pointGeo.Lon / 10e6} Alt:{_pointGeo.Alt / 10e2} N: {_pointEnu.N:F1}  E: {_pointEnu.E:F1}  U: {_pointEnu.U:F1} ");
     }
 }
