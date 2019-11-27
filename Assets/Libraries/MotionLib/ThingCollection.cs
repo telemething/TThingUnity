@@ -11,6 +11,9 @@ public class Thing
     private TypeEnum _type = TypeEnum.UnInit;
     private SelfEnum _self = SelfEnum.UnInit;
     private RoleEnum _role = RoleEnum.UnInit;
+    private object _tag = null;
+    private object _gameObjectObject = null;
+    private Dictionary<string,object> _tagList = null;
 
     public enum TypeEnum { UnInit, Unknown, Uav, Rover, Stationary, Person }
 
@@ -40,6 +43,34 @@ public class Thing
     {
         set => _role = value;
         get => _role;
+    }
+
+    public object Tag
+    {
+        set => _tag = value;
+        get => _tag;
+    }
+
+    public object GameObjectObject
+    {
+        set => _gameObjectObject = value;
+        get => _gameObjectObject;
+    }
+
+    public void SetTag<T>(T value, string tagId)
+    {
+        if (!_tagList.ContainsKey(tagId))
+            _tagList.Add(tagId, value);
+        else
+            _tagList[tagId] = value;
+    }
+
+    public T GetTag<T>(string tagId) where T:class
+    {
+        if (!_tagList.ContainsKey(tagId))
+            return default(T);
+        
+        return _tagList[tagId] as T;
     }
 
     public Thing(string id)
@@ -237,5 +268,4 @@ public class ThingCollection
     {
         return _things.Select(thing => thing.Value.Pose).ToList();
     }
-
 }
