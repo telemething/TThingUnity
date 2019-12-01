@@ -80,7 +80,7 @@ public class TextVal : MonoBehaviour
 #if UNITY_WSA_10_0
         //System.Threading.Tasks.Task.Delay((int)(1000)).Wait();
 #else
-        while (_stopwatch.ElapsedMilliseconds + _startTimeMs < ms.ElapsedTimeMs) ;
+        //while (_stopwatch.ElapsedMilliseconds + _startTimeMs < ms.ElapsedTimeMs) ;
 #endif
         var simpleQ = (float)(250 *
                              (_motionStatRecord.RotStddev.y +

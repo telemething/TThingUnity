@@ -11,6 +11,7 @@ public class Thing
     private TypeEnum _type = TypeEnum.UnInit;
     private SelfEnum _self = SelfEnum.UnInit;
     private RoleEnum _role = RoleEnum.UnInit;
+    private double _distanceToObserver = 0;
     private object _tag = null;
     private object _gameObjectObject = null;
     private Dictionary<string,object> _tagList = null;
@@ -29,6 +30,12 @@ public class Thing
         set => _id = value;
         get => _id;
     }
+    public double DistanceToObserver
+    {
+        set => _distanceToObserver = value;
+        get => _distanceToObserver;
+    }
+
     public TypeEnum Type
     {
         set => _type = value;
