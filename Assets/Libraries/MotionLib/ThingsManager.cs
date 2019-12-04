@@ -417,8 +417,12 @@ public class ThingGameObject
         {
             // https://docs.unity3d.com/ScriptReference/Transform.LookAt.html
             var selfThing = ThingsManager.Self.GameObjectObject as ThingGameObject;
-            if (null != selfThing) if (null != selfThing._gameObject) 
+            if (null != selfThing) if (null != selfThing._gameObject)
+                //_haloObject.transform.LookAt(selfThing._gameObject.transform, Vector3.zero);
                 _haloObject.transform.LookAt(selfThing._gameObject.transform);
+
+            //add another 90
+            _haloObject.transform.eulerAngles += new Vector3(90,0,0);
         }
     }
 }
@@ -440,11 +444,23 @@ public class ThingUavObject : ThingGameObject
 
     public ThingUavObject()
     {
-        base._gameObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        //base._gameObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        //base._gameObject.name = "UAV";
+        //_gameObject.transform.localScale = new Vector3(1, 1, 1);
+        //_gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        //_gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+
+        GameObject pf1 = Resources.Load("ThingDrone") as GameObject;
+        base._gameObject = UnityEngine.Object.Instantiate(pf1) as GameObject;
         base._gameObject.name = "UAV";
-        _gameObject.transform.localScale = new Vector3(1, 1, 1);
-        _gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
-        _gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+        base._gameObject.AddComponent<MeshRenderer>();
+        //_haloObject.transform.SetParent(base._gameObject.transform, false);
+        //childObject.transform.parent = base._gameObject.transform;
+        base._gameObject.transform.localScale = new Vector3(1, 1, 1);
+        base._gameObject.transform.position = new Vector3(0, 0, 0);
+        base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+
 
         /*var childObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         childObject.transform.SetParent( base._gameObject.transform, false );
@@ -457,13 +473,14 @@ public class ThingUavObject : ThingGameObject
         // https://docs.unity3d.com/ScriptReference/Resources.Load.html
         // https://docs.unity3d.com/ScriptReference/Object.Instantiate.html
 
-        GameObject objPrefab = Resources.Load("ThingHalo") as GameObject;
+        GameObject objPrefab = Resources.Load("ThingHaloRing") as GameObject;
         _haloObject = UnityEngine.Object.Instantiate(objPrefab) as GameObject;
         _haloObject.name = "UavHalo";
         _haloObject.AddComponent<MeshRenderer>();
-        _haloObject.transform.SetParent(base._gameObject.transform, false);
+        _haloObject.transform.SetParent(base._gameObject.transform, true);
         //childObject.transform.parent = base._gameObject.transform;
         _haloObject.transform.localScale = new Vector3(1, 1, 1);
+        _haloObject.transform.eulerAngles = new Vector3(90, 0, 0);
         _haloObject.transform.position = new Vector3(0, 0, 0);
         _haloObject.GetComponent<Renderer>().material.color = new Color(0, 0, 255);
         _haloObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
