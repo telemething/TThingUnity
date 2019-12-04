@@ -502,7 +502,8 @@ public class ThingUavObject : ThingGameObject
 
     public ThingUavObject()
     {
-        GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
+        //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
+        GameObject resourceObject = Resources.Load("UavObject") as GameObject;
         base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
         base._gameObject.name = "UAV"  + _count++.ToString();
         base._gameObject.AddComponent<MeshRenderer>();
