@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using GeoLib;
 using UnityEngine;
 
@@ -24,6 +25,7 @@ public class ThingPose
     private bool calculateEnu = false;
     private PointENU _pointEnu = new PointENU();
     private PointLatLonAlt _pointGeo = new PointLatLonAlt();
+    private Orientation _orient = new Orientation();
     private PointLatLonAlt _origin = new PointLatLonAlt();
     private PointGeoStatusEnum _pointGeoStatus = PointGeoStatusEnum.UnInit;
     private PointGeoUsableEnum _pointGeoUsable = PointGeoUsableEnum.UnInit;
@@ -41,6 +43,7 @@ public class ThingPose
     public PointGeoStatusEnum PointGeoStatus => _pointGeoStatus;
     public PointENU PointEnu => _pointEnu;
     public PointLatLonAlt PointGeo => _pointGeo;
+    public Orientation Orient => _orient;
 
     //*************************************************************************
     ///
@@ -111,10 +114,34 @@ public class ThingPose
             type = jsonObj["type"].ToString();
             id = jsonObj["id"].ToString();
             tow = Convert.ToUInt32(jsonObj["tow"]);
+
+            //coordinates
             var coord = jsonObj["coord"];
             _pointGeo.Lat = Convert.ToDouble(coord["lat"]);
             _pointGeo.Lon = Convert.ToDouble(coord["lon"]);
             _pointGeo.Alt = Convert.ToDouble(coord["alt"]);
+
+            //orientation
+            var orient = jsonObj["orient"];
+
+            if (null != orient)
+            {
+                if(null != orient["mag"])
+                    _orient.Magnetic = Convert.ToDouble(orient["mag"]);
+
+                if (null != orient["true"])
+                    _orient.True = Convert.ToDouble(orient["true"]);
+
+                if (null != orient["w"])
+                {
+                    var w = Convert.ToSingle(orient["w"]);
+                    var x = Convert.ToSingle(orient["x"]);
+                    var y = Convert.ToSingle(orient["y"]);
+                    var z = Convert.ToSingle(orient["z"]);
+
+                    _orient.Quat = new System.Numerics.Quaternion(x, y, z, w);
+                }
+            }
 
             // If coords are > 1000 then they are ints, and need to be scaled down
             if (_pointGeo.Lat > 1000)

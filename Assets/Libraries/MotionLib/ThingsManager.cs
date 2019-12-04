@@ -154,6 +154,7 @@ public class ThingsManager : MonoBehaviour
 
 public class ThingGameObject
 {
+    protected Thing _thing = null;
     protected GameObject _gameObject = null;
     protected GameObject _haloObject = null;
     protected Interactable _interactableObject = null;
@@ -417,6 +418,11 @@ public class ThingGameObject
         return GetDistance(from.Pose.PointEnu, to.Pose.PointEnu);
     }
 
+    private static UnityEngine.Quaternion ConvertQuat(System.Numerics.Quaternion quatIn)
+    {
+        return new UnityEngine.Quaternion(quatIn.X, quatIn.Y, quatIn.Z, quatIn.W);
+    }
+
     //*************************************************************************
     /// <summary>
     /// 
@@ -426,10 +432,10 @@ public class ThingGameObject
 
     public virtual void Update(Thing thing)
     {
-        float haloScale = 1;
+        _thing = thing;
 
         //find distance to 'self'
-        thing.DistanceToObserver = GetDistance(ThingsManager.Self, thing);
+        thing.DistanceToObserver = GetDistance(ThingsManager.Self, _thing);
 
         //Let the ThingsManager know our distance so that it can
         //optimize the frustum size
@@ -437,9 +443,23 @@ public class ThingGameObject
 
         //x = E, y = U, z = N
         _gameObject.transform.position = new Vector3(
-            Convert.ToSingle(thing.Pose.PointEnu.E),
-            Convert.ToSingle(thing.Pose.PointEnu.U),
-            Convert.ToSingle(thing.Pose.PointEnu.N));
+            Convert.ToSingle(_thing.Pose.PointEnu.E),
+            Convert.ToSingle(_thing.Pose.PointEnu.U),
+            Convert.ToSingle(_thing.Pose.PointEnu.N));
+
+        _gameObject.transform.localRotation = ConvertQuat(_thing.Pose.Orient.Quat);
+
+        UpdateHalo();
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    private void UpdateHalo()
+    {
+        float haloScale = 1;
 
         if (null != _haloObject)
         {
@@ -451,10 +471,11 @@ public class ThingGameObject
                     //add another 90
                     _haloObject.transform.eulerAngles += new Vector3(90, 0, 0);
 
-                    if (thing.DistanceToObserver > 8)
-                        haloScale = (float)thing.DistanceToObserver / 8F;
+                    if (_thing.DistanceToObserver > 8)
+                        haloScale = (float)_thing.DistanceToObserver / 8F;
 
-                    _haloObject.transform.localScale = new Vector3(haloScale,haloScale,haloScale);
+                    _haloObject.transform.localScale = new Vector3(
+                        haloScale,haloScale,haloScale);
                 }
         }
     }
@@ -468,6 +489,7 @@ public class ThingGameObject
 
 public class ThingUavObject : ThingGameObject
 {
+    private static int _count = 0;
 
     //*************************************************************************
     /// <summary>
@@ -482,7 +504,7 @@ public class ThingUavObject : ThingGameObject
     {
         GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
         base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
-        base._gameObject.name = "UAV";
+        base._gameObject.name = "UAV"  + _count++.ToString();
         base._gameObject.AddComponent<MeshRenderer>();
         base._gameObject.transform.localScale = new Vector3(1, 1, 1);
         base._gameObject.transform.position = new Vector3(0, 0, 0);
@@ -501,32 +523,6 @@ public class ThingUavObject : ThingGameObject
     public override void Update(Thing thing)
     {
         base.Update(thing);
-    }
-}
-
-public class thingHaloGameObject : UnityEngine.Object
-{
-    private static int _count = 0;
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    //*************************************************************************
-
-    public thingHaloGameObject(GameObject parent)
-    {
-        GameObject objPrefab = Resources.Load("ThingHaloRing") as GameObject;
-        GameObject haloObject = UnityEngine.Object.Instantiate(objPrefab) as GameObject;
-        haloObject.name = "UavHalo";
-        haloObject.AddComponent<MeshRenderer>();
-        haloObject.transform.SetParent(parent.transform, true);
-        //childObject.transform.parent = base._gameObject.transform;
-        haloObject.transform.localScale = new Vector3(1, 1, 1);
-        haloObject.transform.eulerAngles = new Vector3(90, 0, 0);
-        haloObject.transform.position = new Vector3(0, 0, 0);
-        haloObject.GetComponent<Renderer>().material.color = new Color(0, 0, 255);
-        haloObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
     }
 }
 
