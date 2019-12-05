@@ -26,6 +26,7 @@ public class ThingPose
     private PointENU _pointEnu = new PointENU();
     private PointLatLonAlt _pointGeo = new PointLatLonAlt();
     private Orientation _orient = new Orientation();
+    private Orientation _gimbalOrient = new Orientation();
     private PointLatLonAlt _origin = new PointLatLonAlt();
     private PointGeoStatusEnum _pointGeoStatus = PointGeoStatusEnum.UnInit;
     private PointGeoUsableEnum _pointGeoUsable = PointGeoUsableEnum.UnInit;
@@ -44,6 +45,7 @@ public class ThingPose
     public PointENU PointEnu => _pointEnu;
     public PointLatLonAlt PointGeo => _pointGeo;
     public Orientation Orient => _orient;
+    public Orientation GimbalOrient => _gimbalOrient;
 
     //*************************************************************************
     ///
@@ -126,7 +128,7 @@ public class ThingPose
 
             if (null != orient)
             {
-                if(null != orient["mag"])
+                if (null != orient["mag"])
                     _orient.Magnetic = Convert.ToDouble(orient["mag"]);
 
                 if (null != orient["true"])
@@ -140,6 +142,28 @@ public class ThingPose
                     var z = Convert.ToSingle(orient["z"]);
 
                     _orient.Quat = new System.Numerics.Quaternion(x, y, z, w);
+                }
+            }
+
+            //gimbal orientation
+            var gimbalOrient = jsonObj["gimbal0"];
+
+            if (null != gimbalOrient)
+            {
+                if (null != gimbalOrient["mag"])
+                    _orient.Magnetic = Convert.ToDouble(gimbalOrient["mag"]);
+
+                if (null != gimbalOrient["true"])
+                    _orient.True = Convert.ToDouble(gimbalOrient["true"]);
+
+                if (null != gimbalOrient["w"])
+                {
+                    var w = Convert.ToSingle(gimbalOrient["w"]);
+                    var x = Convert.ToSingle(gimbalOrient["x"]);
+                    var y = Convert.ToSingle(gimbalOrient["y"]);
+                    var z = Convert.ToSingle(gimbalOrient["z"]);
+
+                    _gimbalOrient.Quat = new System.Numerics.Quaternion(x, y, z, w);
                 }
             }
 

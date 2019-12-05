@@ -450,6 +450,22 @@ public class ThingGameObject
         _gameObject.transform.localRotation = ConvertQuat(_thing.Pose.Orient.Quat);
 
         UpdateHalo();
+        UpdateGimbal(ConvertQuat(_thing.Pose.GimbalOrient.Quat));
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    private void UpdateGimbal(UnityEngine.Quaternion orient)
+    {
+        var gimbal = _gameObject.transform.Find("UavGimbal")?.gameObject; 
+
+        if(null != gimbal)
+        {
+            gimbal.transform.localRotation = orient;
+        }
     }
 
     //*************************************************************************
@@ -475,7 +491,7 @@ public class ThingGameObject
                         haloScale = (float)_thing.DistanceToObserver / 8F;
 
                     _haloObject.transform.localScale = new Vector3(
-                        haloScale,haloScale,haloScale);
+                        haloScale, haloScale, haloScale);
                 }
         }
     }
