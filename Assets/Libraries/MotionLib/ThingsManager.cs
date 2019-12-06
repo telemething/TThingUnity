@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using GeoLib;
 using Microsoft.MixedReality.Toolkit.UI;
 using Microsoft.MixedReality.Toolkit.Utilities;
@@ -9,6 +10,7 @@ using Microsoft.MixedReality.Toolkit.Utilities.Solvers;
 using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.Experimental.PlayerLoop;
+using UnityEngine.UI;
 
 //*************************************************************************
 /// <summary>
@@ -157,6 +159,9 @@ public class ThingGameObject
     protected Thing _thing = null;
     protected GameObject _gameObject = null;
     protected GameObject _haloObject = null;
+    protected GameObject _gimbal = null;
+    protected GameObject _gimbalCameraHousing = null;
+    protected Camera _gimbalCamera = null;
     protected Interactable _interactableObject = null;
     protected ThemeDefinition _newThemeType;
     protected BoxCollider _boxCollider;
@@ -228,6 +233,62 @@ public class ThingGameObject
         _haloObject.transform.position = new Vector3(0, 0, 0);
         _haloObject.GetComponent<Renderer>().material.color = new Color(0, 0, 255);
         _haloObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
+    public void SetupGimbal()
+    {
+        var xform = _gameObject.transform.Find("Gimbal");
+
+        if (null == xform)
+            return;
+
+        _gimbal = xform.gameObject;
+
+        if (null == _gimbal) 
+            return;
+
+        xform = _gimbal.transform.Find("CameraHousing");
+
+        if (null == xform)
+            return;
+
+        if (null == xform.gameObject)
+            return;
+
+        _gimbalCameraHousing = xform.gameObject;
+
+        xform = _gimbalCameraHousing.transform.Find("Camera");
+
+        if (null == xform)
+            return;
+
+        if (null == xform.gameObject)
+            return;
+
+        _gimbalCamera = xform.gameObject.GetComponent<Camera>();
+
+        //---------------
+
+        var pirt = GameObject.Find("PipImageRenderTexture");
+
+        var texture = RenderTexture.FindObjectsOfType< RenderTexture>();
+        
+        /*var texture = RenderTexture.FindObjectsOfType(typeof(RenderTexture));
+
+        if (texture)
+            Debug.Log("GUITexture object found: " + texture.name);
+        else
+            Debug.Log("No GUITexture object could be found");*/
+
+        //---------------------------------
+
+        _gimbalCamera.targetTexture = texture[0];
     }
 
     //*************************************************************************
@@ -460,12 +521,12 @@ public class ThingGameObject
     //*************************************************************************
     private void UpdateGimbal(UnityEngine.Quaternion orient)
     {
-        var gimbal = _gameObject.transform.Find("UavGimbal")?.gameObject; 
+        var go = _gameObject.transform.Find("Gimbal");
+        
+        var gimbal = go?.gameObject;
 
-        if(null != gimbal)
-        {
-            gimbal.transform.localRotation = orient;
-        }
+        if (null != gimbal)
+            _gimbal.transform.localRotation = orient;
     }
 
     //*************************************************************************
@@ -529,6 +590,7 @@ public class ThingUavObject : ThingGameObject
         base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
 
         AddHalo();
+        SetupGimbal();
     }
 
     //*************************************************************************
