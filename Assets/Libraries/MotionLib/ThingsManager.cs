@@ -7,10 +7,12 @@ using GeoLib;
 using Microsoft.MixedReality.Toolkit.UI;
 using Microsoft.MixedReality.Toolkit.Utilities;
 using Microsoft.MixedReality.Toolkit.Utilities.Solvers;
-using UnityEditor.UI;
+//using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.Experimental.PlayerLoop;
 using UnityEngine.UI;
+using NetStandardClassLibraryT1;
+//using NetStandardClassLibraryT2;
 
 //*************************************************************************
 /// <summary>
@@ -62,6 +64,10 @@ public class ThingsManager : MonoBehaviour
     {
         _TM = ThingMotion.GetPoseObject(Port);
         _TM.SetThing(MyThingId, Thing.TypeEnum.Person, Thing.SelfEnum.Self, Thing.RoleEnum.Observer);
+
+        MyUtilities utils = new MyUtilities();
+        utils.AddValues(2, 3);
+        print("2 + 3 = " + utils.c);
     }
 
     //*************************************************************************
