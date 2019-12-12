@@ -54,6 +54,22 @@ public class ThingsManager : MonoBehaviour
         set => _maxThingDistance = value;
     }
 
+    private void LogThis(Exception ex, string prefix, bool showOnConsole)
+    {
+        if (showOnConsole)
+            Debug.Log(ex.Message);
+
+        Debug.unityLogger.LogException(ex, this);
+    }
+
+    private void LogThis(string message, bool showOnConsole)
+    {
+        if (showOnConsole)
+            Debug.Log(message);
+
+        Debug.unityLogger.logHandler.LogFormat(LogType.Exception, this, message);
+    }
+
     //*************************************************************************
     /// <summary>
     /// 
@@ -77,6 +93,14 @@ public class ThingsManager : MonoBehaviour
     //*************************************************************************
     void Update()
     {
+        //return;//TODO Temp
+
+        if (null == _TM)
+        {
+            LogThis("ThingsManager.Update _TM == null", true);
+            return;
+        }
+
         var things = _TM.GetThings();
 
         //at each update, we check max and min distances of the things
