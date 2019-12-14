@@ -591,8 +591,8 @@ PlayerSettings:
   metroSplashScreenUseBackgroundColor: 0
   platformCapabilities:
     WindowsStoreApps:
-      InternetClient: False
-      Microphone: False
+      InternetClient: True
+      Microphone: True
       SpatialPerception: False
   metroTargetDeviceFamilies: {}
   metroFTAName: 

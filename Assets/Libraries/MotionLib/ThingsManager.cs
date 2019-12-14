@@ -14,6 +14,8 @@ using UnityEngine.UI;
 using NetStandardClassLibraryT1;
 //using NetStandardClassLibraryT2;
 
+#region ThingsManager
+
 //*************************************************************************
 /// <summary>
 /// 
@@ -36,6 +38,9 @@ public class ThingsManager : MonoBehaviour
 
     private ThingMotion _TM;
 
+    //TODO * For now, terrain is just a flat plane with a point at 0,0,0
+    private static Plane _horizontalPlane = new Plane(Vector3.up, Vector3.zero);
+
     public static Thing Self
     {
         get => _self;
@@ -52,6 +57,11 @@ public class ThingsManager : MonoBehaviour
     {
         get => _maxThingDistance;
         set => _maxThingDistance = value;
+    }
+
+    public static Plane HorizontalPlane
+    {
+        get => _horizontalPlane;
     }
 
     private void LogThis(Exception ex, string prefix, bool showOnConsole)
@@ -178,6 +188,10 @@ public class ThingsManager : MonoBehaviour
     }
 }
 
+#endregion //ThingsManager
+
+#region ThingGameObject
+
 //*************************************************************************
 /// <summary>
 /// 
@@ -194,18 +208,21 @@ public class ThingGameObject
     protected GameObject _haloObject = null;
     protected GameObject _gimbal = null;
     protected GameObject _gimbalCameraHousing = null;
+    protected GameObject _gimbalCameraGazeHitpoint = null;
     protected Camera _gimbalCamera = null;
     protected Interactable _interactableObject = null;
     protected ThemeDefinition _newThemeType;
     protected BoxCollider _boxCollider;
-    //protected ThingPose _lerpStartPose;
-    //protected ThingPose _lerpEndPose;
+
     protected float _lerpStartTime;
     protected bool _gotLerpStart = false;
     protected Vector3 _lerpStartPosition;
     protected Vector3 _lerpEndPosition;
-
     protected float _lerpTimeSpan;
+
+    //The position of the gimbal camera's gaze intersection with the terrain
+    Vector3 _gimbalCameraGazeTerrainIntersctionPoint;
+    bool _haveGimbalCameraGazeTerrainIntersctionPoint = false;
 
     //*************************************************************************
     /// <summary>
@@ -285,6 +302,24 @@ public class ThingGameObject
     /// </summary>
     //*************************************************************************
 
+    public void AddGimbalCameraGazeHitpoint()
+    {
+        _gimbalCameraGazeHitpoint = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        _gimbalCameraGazeHitpoint.name = "Hitpoint";
+        _gimbalCameraGazeHitpoint.transform.localScale = new Vector3(1, 1, 1);
+        _gimbalCameraGazeHitpoint.transform.position = new Vector3(0, 0, 0);
+        _gimbalCameraGazeHitpoint.AddComponent<MeshRenderer>();
+        _gimbalCameraGazeHitpoint.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        _gimbalCameraGazeHitpoint.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+        _gimbalCameraGazeHitpoint.SetActive(false);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
     public void SetupGimbal()
     {
         var xform = _gameObject.transform.Find("Gimbal");
@@ -333,6 +368,8 @@ public class ThingGameObject
         //---------------------------------
 
         _gimbalCamera.targetTexture = texture[0];
+
+        AddGimbalCameraGazeHitpoint();
     }
 
     //*************************************************************************
@@ -523,20 +560,39 @@ public class ThingGameObject
         return GetDistance(from.Pose.PointEnu, to.Pose.PointEnu);
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="quatIn"></param>
+    /// <returns></returns>
+    //*************************************************************************
+
     private static UnityEngine.Quaternion ConvertQuat(System.Numerics.Quaternion quatIn)
     {
         return new UnityEngine.Quaternion(quatIn.X, quatIn.Y, quatIn.Z, quatIn.W);
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="thing"></param>
+    /// <returns></returns>
+    //*************************************************************************
+
     private bool MovedMuch(Thing thing)
     {
         if (.1 <
-            Math.Pow((_thing.Pose.PointEnu.E - _lerpStartPosition.x), 2) + 
-            Math.Pow((_thing.Pose.PointEnu.U - _lerpStartPosition.y), 2) + 
-            Math.Pow((_thing.Pose.PointEnu.N - _lerpStartPosition.z), 2) )
+            Math.Pow((_thing.Pose.PointEnu.E - _lerpStartPosition.x), 2) +
+            Math.Pow((_thing.Pose.PointEnu.U - _lerpStartPosition.y), 2) +
+            Math.Pow((_thing.Pose.PointEnu.N - _lerpStartPosition.z), 2))
             return true;
 
-        return false;
+        //return false;
+
+        //*** TODO * Check other changes, like frame orientation and gimbal
+        return true;
     }
 
     //*************************************************************************
@@ -608,6 +664,74 @@ public class ThingGameObject
 
         SetHalo();
         SetGimbal(ConvertQuat(_thing.Pose.GimbalOrient.Quat));
+        SetGimbalCamera(_gimbalCamera);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Find the intersection of a camera's gaze and the terrain.
+    /// </summary>
+    /// <param name="origin"></param> The position of the camera
+    /// <param name="direction"></param> The orientation of the camera
+    /// <param name="intersectionPoint"></param> Hitpoint
+    /// <returns></returns>
+    //*************************************************************************
+    private bool FindRayTerrainIntersection(Vector3 origin, 
+        Vector3 direction,out Vector3 intersectionPoint)
+    {
+        Ray ray = new Ray(origin, direction);
+
+        //TODO * For now, terrain is just a flat plane with a point at 0,0,0
+        if (ThingsManager.HorizontalPlane.Raycast(ray, out var distance))
+        {
+            intersectionPoint = ray.GetPoint(distance);
+            return true;
+        }
+
+        intersectionPoint = new Vector3(0,0,0);
+        return false;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="hitpoint"></param>
+    /// <param name="active"></param>
+    //*************************************************************************
+    private void SetGimbalCameraGazeHitpoint(Vector3 hitpoint, bool active)
+    {
+        if (null == _gimbalCameraGazeHitpoint)
+            return;
+
+        _gimbalCameraGazeHitpoint.SetActive(active);
+
+        if(active)
+            _gimbalCameraGazeHitpoint.transform.position = hitpoint;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="gimbalCamera"></param>
+    //*************************************************************************
+    private void SetGimbalCamera(Camera gimbalCamera)
+    {
+        if (null == gimbalCamera)
+            return;
+
+        //Find the intersection of the gimbal camera's gaze and the terrain.
+        //The arguments are the position of the gimbal camera, and the
+        //world space rotation of the gimbal (to which the camera is mounted)
+        _haveGimbalCameraGazeTerrainIntersctionPoint = FindRayTerrainIntersection(
+            gimbalCamera.transform.position,
+            gimbalCamera.transform.forward,
+            out _gimbalCameraGazeTerrainIntersctionPoint);
+
+        SetGimbalCameraGazeHitpoint(
+            _gimbalCameraGazeTerrainIntersctionPoint,
+            _haveGimbalCameraGazeTerrainIntersctionPoint);
     }
 
     //*************************************************************************
@@ -653,6 +777,10 @@ public class ThingGameObject
         }
     }
 }
+
+#endregion //ThingGameObject
+
+#region ThingUavObject
 
 //*************************************************************************
 /// <summary>
@@ -701,6 +829,10 @@ public class ThingUavObject : ThingGameObject
     }
 }
 
+#endregion //ThingUavObject
+
+#region ThingPersonObject
+
 //*************************************************************************
 /// <summary>
 /// 
@@ -730,6 +862,10 @@ public class ThingPersonObject : ThingGameObject
     }
 }
 
+#endregion //ThingPersonObject
+
+#region ThingUninitObject
+
 //*************************************************************************
 /// <summary>
 /// 
@@ -755,3 +891,5 @@ public class ThingUnInitObject : ThingGameObject
         _gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
     }
 }
+
+#endregion //ThingGameObject
