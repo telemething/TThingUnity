@@ -152,7 +152,7 @@ public class ThingsManager : MonoBehaviour
         if (null == thing.GameObjectObject)
             thing.GameObjectObject = ThingGameObject.CreateGameObject(thing);
         else
-            ThingGameObject.UpdateThing(thing);
+            ThingGameObject.SetThing(thing);
     }
 
     //*************************************************************************
@@ -195,6 +195,8 @@ public class ThingGameObject
     protected Interactable _interactableObject = null;
     protected ThemeDefinition _newThemeType;
     protected BoxCollider _boxCollider;
+    protected ThingPose _lerpStartPose;
+    protected ThingPose _lerpEndPose;
 
     //*************************************************************************
     /// <summary>
@@ -454,10 +456,10 @@ public class ThingGameObject
     /// <param name="thing"></param>
     //*************************************************************************
 
-    public static void UpdateThing(Thing thing)
+    public static void SetThing(Thing thing)
     {
         var gameObj = thing.GameObjectObject as ThingGameObject;
-        gameObj?.Update(thing);
+        gameObj?.Set(thing);
     }
 
     //*************************************************************************
@@ -521,9 +523,27 @@ public class ThingGameObject
     /// <param name="thing"></param>
     //*************************************************************************
 
-    public virtual void Update(Thing thing)
+    public virtual void Set(Thing thing)
     {
         _thing = thing;
+
+        if (thing.Pose.CheckForNewData())
+        {
+            //we have a position update. Start a lerp
+
+            //first time through we don't have a start, so start and end are the
+            //same. Otherwise, set new start pose to last end pose
+            if (null == _lerpStartPose)
+            {
+                _lerpStartPose = new ThingPose();
+                _lerpEndPose = new ThingPose();
+                _lerpStartPose.SetVals(thing.Pose);
+            }
+            else
+                _lerpStartPose.SetVals(_lerpEndPose);
+
+            _lerpEndPose.SetVals(thing.Pose);
+        }
 
         //find distance to 'self'
         thing.DistanceToObserver = GetDistance(ThingsManager.Self, _thing);
@@ -540,8 +560,8 @@ public class ThingGameObject
 
         _gameObject.transform.localRotation = ConvertQuat(_thing.Pose.Orient.Quat);
 
-        UpdateHalo();
-        UpdateGimbal(ConvertQuat(_thing.Pose.GimbalOrient.Quat));
+        SetHalo();
+        SetGimbal(ConvertQuat(_thing.Pose.GimbalOrient.Quat));
     }
 
     //*************************************************************************
@@ -549,7 +569,7 @@ public class ThingGameObject
     /// 
     /// </summary>
     //*************************************************************************
-    private void UpdateGimbal(UnityEngine.Quaternion orient)
+    private void SetGimbal(UnityEngine.Quaternion orient)
     {
         var go = _gameObject.transform.Find("Gimbal");
         
@@ -564,7 +584,7 @@ public class ThingGameObject
     /// 
     /// </summary>
     //*************************************************************************
-    private void UpdateHalo()
+    private void SetHalo()
     {
         float haloScale = 1;
 
@@ -629,9 +649,9 @@ public class ThingUavObject : ThingGameObject
     /// </summary>
     /// <param name="thing"></param>
     //*************************************************************************
-    public override void Update(Thing thing)
+    public override void Set(Thing thing)
     {
-        base.Update(thing);
+        base.Set(thing);
     }
 }
 

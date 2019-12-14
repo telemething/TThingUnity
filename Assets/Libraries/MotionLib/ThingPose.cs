@@ -22,6 +22,7 @@ public class ThingPose
     public string id;
     public uint tow;
 
+    private bool _isNewData = false;
     private bool calculateEnu = false;
     private PointENU _pointEnu = new PointENU();
     private PointLatLonAlt _pointGeo = new PointLatLonAlt();
@@ -46,6 +47,30 @@ public class ThingPose
     public PointLatLonAlt PointGeo => _pointGeo;
     public Orientation Orient => _orient;
     public Orientation GimbalOrient => _gimbalOrient;
+
+    public bool IsNewData
+    {
+        get { return _isNewData; }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Check if new data has arrived from some channel since we last checked
+    /// it. Mark as not new data. (to indicate that we have read it).
+    /// </summary>
+    /// <returns></returns>
+    //*************************************************************************
+
+    public bool CheckForNewData()
+    {
+        if (_isNewData)
+        {
+            _isNewData = false;
+            return true;
+        }
+
+        return false;
+    }
 
     //*************************************************************************
     ///
@@ -180,6 +205,7 @@ public class ThingPose
             _pointGeoUsable = PointGeoUsableEnum.Yes;
 
             CalculateEnu(_pointGeo, _origin);
+            _isNewData = true;
         }
         catch (Exception e)
         {
@@ -233,6 +259,7 @@ public class ThingPose
         _pointGeoUsable = PointGeoUsableEnum.Yes;
 
         CalculateEnu(_pointGeo, _origin);
+        _isNewData = true;
     }
 
     //*************************************************************************
