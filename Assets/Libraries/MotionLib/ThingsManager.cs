@@ -220,6 +220,8 @@ public class ThingGameObject
     protected Vector3 _lerpEndPosition;
     protected float _lerpTimeSpan;
 
+    protected HoloToolkit.Unity.DirectionIndicator _directionIndicator;
+
     //The position of the gimbal camera's gaze intersection with the terrain
     Vector3 _gimbalCameraGazeTerrainIntersctionPoint;
     bool _haveGimbalCameraGazeTerrainIntersctionPoint = false;
@@ -274,6 +276,19 @@ public class ThingGameObject
                 Target = _gameObject,
             },
         };*/
+    }
+
+    public void AddDirectionIndicator()
+    {
+        _directionIndicator = _gameObject.AddComponent<HoloToolkit.Unity.DirectionIndicator>();
+        GameObject objPrefab = Resources.Load("Chevron") as GameObject;
+        _directionIndicator.DirectionIndicatorObject = objPrefab;
+        _directionIndicator.Cursor = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        _directionIndicator.Cursor.transform.position = new Vector3(0,0,10.0f);
+        _directionIndicator.Cursor.transform.localScale = new Vector3(.1f,.1f,.1f);
+        _directionIndicator.MetersFromCursor = 5f;
+
+        _directionIndicator.Awake2();
     }
 
     //*************************************************************************
@@ -815,6 +830,7 @@ public class ThingUavObject : ThingGameObject
 
         AddHalo();
         SetupGimbal();
+        AddDirectionIndicator();
     }
 
     //*************************************************************************
