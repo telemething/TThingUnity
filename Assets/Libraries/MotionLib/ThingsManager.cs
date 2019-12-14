@@ -186,6 +186,9 @@ public class ThingsManager : MonoBehaviour
 
 public class ThingGameObject
 {
+    // TODO * we need to adjust this dynamically to match transmission rate
+    private static float DefaultLerpTimeSpan = 1.0f;
+
     protected Thing _thing = null;
     protected GameObject _gameObject = null;
     protected GameObject _haloObject = null;
@@ -195,8 +198,14 @@ public class ThingGameObject
     protected Interactable _interactableObject = null;
     protected ThemeDefinition _newThemeType;
     protected BoxCollider _boxCollider;
-    protected ThingPose _lerpStartPose;
-    protected ThingPose _lerpEndPose;
+    //protected ThingPose _lerpStartPose;
+    //protected ThingPose _lerpEndPose;
+    protected float _lerpStartTime;
+    protected bool _gotLerpStart = false;
+    protected Vector3 _lerpStartPosition;
+    protected Vector3 _lerpEndPosition;
+
+    protected float _lerpTimeSpan;
 
     //*************************************************************************
     /// <summary>
@@ -207,6 +216,9 @@ public class ThingGameObject
     public ThingGameObject()
     {
         _gameObject = new GameObject();
+
+        _lerpTimeSpan = DefaultLerpTimeSpan;
+
         SetupInteractable();
         AddFocusEvents();
     }
@@ -516,6 +528,17 @@ public class ThingGameObject
         return new UnityEngine.Quaternion(quatIn.X, quatIn.Y, quatIn.Z, quatIn.W);
     }
 
+    private bool MovedMuch(Thing thing)
+    {
+        if (.1 <
+            Math.Pow((_thing.Pose.PointEnu.E - _lerpStartPosition.x), 2) + 
+            Math.Pow((_thing.Pose.PointEnu.U - _lerpStartPosition.y), 2) + 
+            Math.Pow((_thing.Pose.PointEnu.N - _lerpStartPosition.z), 2) )
+            return true;
+
+        return false;
+    }
+
     //*************************************************************************
     /// <summary>
     /// 
@@ -533,30 +556,53 @@ public class ThingGameObject
 
             //first time through we don't have a start, so start and end are the
             //same. Otherwise, set new start pose to last end pose
-            if (null == _lerpStartPose)
+            if (!_gotLerpStart)
             {
-                _lerpStartPose = new ThingPose();
-                _lerpEndPose = new ThingPose();
-                _lerpStartPose.SetVals(thing.Pose);
+                _lerpStartPosition.x = Convert.ToSingle(_thing.Pose.PointEnu.E);
+                _lerpStartPosition.y = Convert.ToSingle(_thing.Pose.PointEnu.U);
+                _lerpStartPosition.z = Convert.ToSingle(_thing.Pose.PointEnu.N);
+
+                _gotLerpStart = true;
             }
             else
-                _lerpStartPose.SetVals(_lerpEndPose);
+            {
+                //if we haven't moved much, don't update position
+                if (!MovedMuch(thing))
+                    return;
 
-            _lerpEndPose.SetVals(thing.Pose);
+                _lerpStartPosition = _lerpEndPosition;
+            }
+
+            _lerpEndPosition.x = Convert.ToSingle(_thing.Pose.PointEnu.E);
+            _lerpEndPosition.y = Convert.ToSingle(_thing.Pose.PointEnu.U);
+            _lerpEndPosition.z = Convert.ToSingle(_thing.Pose.PointEnu.N);
+
+            _lerpStartTime = UnityEngine.Time.time;
+
+            //Let the ThingsManager know our distance so that it can
+            //optimize the frustum size
+            ThingsManager.ValidateFrustum(thing.DistanceToObserver);
         }
+
+        var difftime = UnityEngine.Time.time - _lerpStartTime;
+        
+        //make sure difftime does not equal zero
+        if (0 == difftime)
+            difftime = .001f;
+
+        var lerpVal = difftime / _lerpTimeSpan;
+
+        //if lerpVal > 1, then we have fully moved and don't have new pose data
+        //so save power and leave
+        if (lerpVal > 1.1)
+            return;
 
         //find distance to 'self'
         thing.DistanceToObserver = GetDistance(ThingsManager.Self, _thing);
 
-        //Let the ThingsManager know our distance so that it can
-        //optimize the frustum size
-        ThingsManager.ValidateFrustum(thing.DistanceToObserver);
-
         //x = E, y = U, z = N
-        _gameObject.transform.position = new Vector3(
-            Convert.ToSingle(_thing.Pose.PointEnu.E),
-            Convert.ToSingle(_thing.Pose.PointEnu.U),
-            Convert.ToSingle(_thing.Pose.PointEnu.N));
+        _gameObject.transform.position = Vector3.Lerp(
+            _lerpStartPosition, _lerpEndPosition, lerpVal );
 
         _gameObject.transform.localRotation = ConvertQuat(_thing.Pose.Orient.Quat);
 
