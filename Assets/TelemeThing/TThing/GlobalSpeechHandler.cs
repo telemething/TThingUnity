@@ -4,6 +4,35 @@ using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
 using UnityEngine;
 
+public class DroneMenuHandler : MonoBehaviour
+{
+    private static GameObject _droneMenu = null;
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    void Start()
+    {
+        _droneMenu = GameObject.Find("DroneMenu");
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    void Update()
+    { }
+
+    public static void ShowMenu(bool trueToShow)
+    {
+        _droneMenu = GameObject.Find("DroneMenu");
+        _droneMenu?.SetActive(trueToShow);
+    }
+}
+
 public class GlobalSpeechHandler : MonoBehaviour, IMixedRealitySpeechHandler, IMixedRealitySourceStateHandler
 {
     #region Housekeeping
@@ -98,17 +127,30 @@ public class GlobalSpeechHandler : MonoBehaviour, IMixedRealitySpeechHandler, IM
     {
         Debug.Log("--- OnSpeechKeywordRecognized: " + eventData.Command.Keyword);
 
+        if (eventData.Command.Keyword == "Show Drone Menu")
+        {
+            DroneMenuHandler.ShowMenu(true);
+            return;
+        }
+        if (eventData.Command.Keyword == "Hide Drone Menu")
+        {
+            DroneMenuHandler.ShowMenu(false);
+            return;
+        }
         if (eventData.Command.Keyword == "Find Drone")
         {
             transform.localScale *= 0.5f;
+            return;
         }
         if (eventData.Command.Keyword == "smaller")
         {
             transform.localScale *= 0.5f;
+            return;
         }
         else if (eventData.Command.Keyword == "bigger")
         {
             transform.localScale *= 2.0f;
+            return;
         }
     }
 

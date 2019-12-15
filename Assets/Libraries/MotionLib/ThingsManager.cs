@@ -39,7 +39,7 @@ public class ThingsManager : MonoBehaviour
     private ThingMotion _TM;
 
     //TODO * For now, terrain is just a flat plane with a point at 0,0,0
-    private static Plane _horizontalPlane = new Plane(Vector3.up, Vector3.zero);
+    private static Plane _horizontalPlane = new Plane(Vector3.up, new Vector3(0,-4,0));
 
     public static Thing Self
     {
@@ -307,7 +307,8 @@ public class ThingGameObject
         _haloObject.transform.localScale = new Vector3(1, 1, 1);
         _haloObject.transform.eulerAngles = new Vector3(90, 0, 0);
         _haloObject.transform.position = new Vector3(0, 0, 0);
-        _haloObject.GetComponent<Renderer>().material.color = new Color(0, 0, 255);
+        _haloObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        _haloObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(255, 0, 0));
         _haloObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
     }
 
@@ -869,7 +870,7 @@ public class ThingPersonObject : ThingGameObject
     {
         base._gameObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         base._gameObject.name = "Person" + _count++.ToString();
-        _gameObject.transform.localScale = new Vector3(1, 1, 1);
+        _gameObject.transform.localScale = new Vector3(.1f, 1, .1f);
 
         //TODO * Assume person is self for now
         _gameObject.transform.SetParent(Camera.main.transform, false);
