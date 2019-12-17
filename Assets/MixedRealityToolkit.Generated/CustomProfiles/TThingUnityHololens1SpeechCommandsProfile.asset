@@ -53,42 +53,42 @@ MonoBehaviour:
       axisConstraint: 0
   - localizationKey: 
     keyword: Run Mission
-    keyCode: 109
+    keyCode: 283
     action:
       id: 0
       description: Toggle Profiler
       axisConstraint: 0
   - localizationKey: 
     keyword: Stop Drone
-    keyCode: 115
+    keyCode: 282
     action:
       id: 0
       description: Toggle Profiler
       axisConstraint: 0
   - localizationKey: 
     keyword: Return Home
-    keyCode: 104
+    keyCode: 284
     action:
       id: 0
       description: Toggle Profiler
       axisConstraint: 0
   - localizationKey: 
     keyword: Hide Drone Menu
-    keyCode: 104
+    keyCode: 287
     action:
       id: 0
       description: Toggle Profiler
       axisConstraint: 0
   - localizationKey: 
     keyword: Land Drone
-    keyCode: 108
+    keyCode: 285
     action:
       id: 0
       description: Toggle Profiler
       axisConstraint: 0
   - localizationKey: 
     keyword: Show Drone Menu
-    keyCode: 100
+    keyCode: 286
     action:
       id: 0
       description: Toggle Profiler

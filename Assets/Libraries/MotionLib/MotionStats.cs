@@ -167,7 +167,7 @@ namespace System.IO
                 if (size < Capacity)
                     size++;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }
@@ -230,7 +230,7 @@ namespace System.IO
                 size--;
                 return item;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }

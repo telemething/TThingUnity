@@ -1,14 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
-using RosSharp.RosBridgeClient;
-using RosSharp.RosBridgeClient.Protocols;
-
 
 //*****************************************************************************
 //
@@ -366,7 +358,7 @@ namespace RosClientLib
                             topicsList.Sort((x, y) => string.Compare(x.topic, y.topic));
                             callback.Invoke(new TopicList.TopicListReqResp() { rosTopics = topicsList, success = true });
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             callback.Invoke(new TopicList.TopicListReqResp() { success = false });
                         }
