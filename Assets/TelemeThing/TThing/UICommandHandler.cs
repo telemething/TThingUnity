@@ -1,25 +1,43 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Microsoft.MixedReality.Toolkit.Input;
+using TThingComLib;
+using TThingComLib.Messages;
 using UnityEngine;
 
 public class UICommandHandler : MonoBehaviour
 {
+    private TThingComLib.TThingCom _tthingCom = new TThingCom();
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        Connect(); //*** TODO * Should we always connect at startup, should we retry?
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+    }
+
+    public void Connect()
+    {
+        _tthingCom.Connect();
     }
 
     public void SendCommand_RunMission()
     {
-        Debug.Log("--- UICommandHandler:SendCommand_RunMission()");
+        try
+        {
+            Debug.Log("--- UICommandHandler:SendCommand_RunMission()");
+            _tthingCom.Send(new StartMission());
+        }
+        catch (Exception e)
+        {
+            Debug.Log("--- UICommandHandler:SendCommand_RunMission() Exception" + e.Message);
+            Console.WriteLine("---UICommandHandler:SendCommand_RunMission() Exception" + e.Message);
+        }
     }
 
     public void SendCommand_StopDrone()

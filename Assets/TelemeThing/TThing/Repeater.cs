@@ -20,6 +20,7 @@ public class Repeater : MonoBehaviour
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 //using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
@@ -314,7 +315,7 @@ namespace RosClientLib
             {
                 case TThingComLib.Messages.StartMission ms:
                     string commandFormat =
-                        "{{\"type\": \"command\",\"from\" : \"{0}\", \"to\" : {1}, \"command\" : {{ \"id\": {2} }}}}";
+                        "{{\"type\": \"command\",\"from\" : \"{0}\", \"to\" : \"{1}\", \"commands\" : [{{ \"commandId\": \"{2}\" }}]}}";
                     outMessage = string.Format(commandFormat, "TheHololens", "TheDrone", "StartMission");
                     break;
                 default:
@@ -396,6 +397,7 @@ namespace RosClientLib
         /// <param name="address"></param>
         /// <param name="port"></param>
         /// <param name="dialect"></param>
+        /// <param name="minimumTimeSpanMs"></param>
         //*********************************************************************
 
         public TransportUdp(string address, int port, Dialect dialect, int minimumTimeSpanMs)
@@ -409,7 +411,8 @@ namespace RosClientLib
             sock = new System.Net.Sockets.Socket(
                 System.Net.Sockets.AddressFamily.InterNetwork,
                 System.Net.Sockets.SocketType.Dgram,
-                System.Net.Sockets.ProtocolType.Udp);
+                System.Net.Sockets.ProtocolType.Udp) 
+                {ExclusiveAddressUse = false, EnableBroadcast = true};
 
             ipaddr = System.Net.IPAddress.Parse(_destIP);
             endpoint = new System.Net.IPEndPoint(ipaddr, _destPort);
@@ -431,7 +434,7 @@ namespace RosClientLib
 
         public override async Task<bool> Send(Byte[] message)
         {
-            sock.SendTo(message, endpoint);
+            var bytesSent = sock.SendTo(message, endpoint);
             return true;
         }
     }

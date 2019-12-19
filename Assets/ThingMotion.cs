@@ -180,7 +180,16 @@ public class ThingMotion
     //*************************************************************************
     private void ReceiveData()
     {
-        _client = new UdpClient(_port);
+        var groupEp = new IPEndPoint(IPAddress.Any, _port);
+        //_client = new UdpClient(_port);
+        _client = new UdpClient {ExclusiveAddressUse = false, EnableBroadcast = true};
+
+        _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, false);
+        _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+        _client.Client.Bind(groupEp);
+        
+        var anyIp = new IPEndPoint(IPAddress.Any, 0);
 
         switch (_mode)
         {
@@ -196,9 +205,8 @@ public class ThingMotion
         {
             try
             {
-                var anyIp = new IPEndPoint(IPAddress.Any, 0);
                 var data = _client.Receive(ref anyIp);
-
+                
                 switch (_mode)
                 {
                     case modeEnum.motion:
