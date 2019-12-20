@@ -97,18 +97,6 @@ public class ThingPose
     /// <summary>
     /// 
     /// </summary>
-    /// 
-    //*************************************************************************
-    public ThingPose(string jsonString)
-    {
-        SetVals(jsonString);
-    }
-
-    //*************************************************************************
-    ///
-    /// <summary>
-    /// 
-    /// </summary>
     /// <param name="pointGeo"></param>
     /// <param name="pointOrigin"></param>
     ///
@@ -127,70 +115,22 @@ public class ThingPose
     }
 
     //*************************************************************************
-    ///
     /// <summary>
     /// 
     /// </summary>
-    /// <returns></returns>
-    /// 
+    /// <param name="message"></param>
     //*************************************************************************
-    public void SetVals(Newtonsoft.Json.Linq.JObject jsonObj)
+    public void SetVals(TThingComLib.Messages.Message message)
     {
-        try
+        type = message.Type.ToString(); //*** TODO * useless?
+        id = message.From;
+        tow = 2; //*** TODO * handle time string correctly
+
+        if (null != message.Coord)
         {
-            type = jsonObj["type"].ToString();
-            id = jsonObj["id"].ToString();
-            tow = Convert.ToUInt32(jsonObj["tow"]);
-
-            //coordinates
-            var coord = jsonObj["coord"];
-            _pointGeo.Lat = Convert.ToDouble(coord["lat"]);
-            _pointGeo.Lon = Convert.ToDouble(coord["lon"]);
-            _pointGeo.Alt = Convert.ToDouble(coord["alt"]);
-
-            //orientation
-            var orient = jsonObj["orient"];
-
-            if (null != orient)
-            {
-                if (null != orient["mag"])
-                    _orient.Magnetic = Convert.ToDouble(orient["mag"]);
-
-                if (null != orient["true"])
-                    _orient.True = Convert.ToDouble(orient["true"]);
-
-                if (null != orient["w"])
-                {
-                    var w = Convert.ToSingle(orient["w"]);
-                    var x = Convert.ToSingle(orient["x"]);
-                    var y = Convert.ToSingle(orient["y"]);
-                    var z = Convert.ToSingle(orient["z"]);
-
-                    _orient.Quat = new System.Numerics.Quaternion(x, y, z, w);
-                }
-            }
-
-            //gimbal orientation
-            var gimbalOrient = jsonObj["gimbal0"];
-
-            if (null != gimbalOrient)
-            {
-                if (null != gimbalOrient["mag"])
-                    _orient.Magnetic = Convert.ToDouble(gimbalOrient["mag"]);
-
-                if (null != gimbalOrient["true"])
-                    _orient.True = Convert.ToDouble(gimbalOrient["true"]);
-
-                if (null != gimbalOrient["w"])
-                {
-                    var w = Convert.ToSingle(gimbalOrient["w"]);
-                    var x = Convert.ToSingle(gimbalOrient["x"]);
-                    var y = Convert.ToSingle(gimbalOrient["y"]);
-                    var z = Convert.ToSingle(gimbalOrient["z"]);
-
-                    _gimbalOrient.Quat = new System.Numerics.Quaternion(x, y, z, w);
-                }
-            }
+            _pointGeo.Lat = message.Coord.Lat;
+            _pointGeo.Lon = message.Coord.Lon;
+            _pointGeo.Alt = message.Coord.Alt;
 
             // If coords are > 1000 then they are ints, and need to be scaled down
             if (_pointGeo.Lat > 1000)
@@ -205,60 +145,29 @@ public class ThingPose
             _pointGeoUsable = PointGeoUsableEnum.Yes;
 
             CalculateEnu(_pointGeo, _origin);
-            _isNewData = true;
         }
-        catch (Exception e)
+
+        if (null != message.Orient)
         {
-            throw new Exception(
-                $"ThingPose::SetVals() : unable to parse json obj : '{e.Message}'",
-                e.InnerException);
-        }
-    }
+            _orient.Magnetic = message.Orient.Mag;
+            _orient.True = message.Orient.True;
 
-    //*************************************************************************
-    ///
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
-    /// 
-    //*************************************************************************
-    public void SetVals(string jsonString)
-    {
-        try
+            _orient.Quat = new System.Numerics.Quaternion(
+                Convert.ToSingle(message.Orient.X),
+                Convert.ToSingle(message.Orient.Y),
+                Convert.ToSingle(message.Orient.Z),
+                Convert.ToSingle(message.Orient.W));
+        }
+
+        if (null != message.Gimbal)
         {
-            SetVals(Newtonsoft.Json.Linq.JObject.Parse(jsonString));
+            _gimbalOrient.Quat = new System.Numerics.Quaternion(
+                Convert.ToSingle(message.Gimbal.X),
+                Convert.ToSingle(message.Gimbal.Y),
+                Convert.ToSingle(message.Gimbal.Z),
+                Convert.ToSingle(message.Gimbal.W));
         }
-        catch (Exception e)
-        {
-            throw new Exception(
-                $"ThingPose::SetVals() : unable to parse json string : '{e.Message}'",
-                e.InnerException);
-        }
-    }
 
-    //*************************************************************************
-    ///
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
-    /// 
-    //*************************************************************************
-    public void SetVals(ThingPose thing)
-    { 
-        type = thing.type;
-        id = thing.id;
-        tow = thing.tow;
-        _pointGeo.Lat = thing._pointGeo.Lat;
-        _pointGeo.Lon = thing._pointGeo.Lon;
-        _pointGeo.Alt = thing._pointGeo.Alt;
-
-        //TODO : just say ok for now
-        _pointGeoStatus = PointGeoStatusEnum.Ok;
-        _pointGeoUsable = PointGeoUsableEnum.Yes;
-
-        CalculateEnu(_pointGeo, _origin);
         _isNewData = true;
     }
 

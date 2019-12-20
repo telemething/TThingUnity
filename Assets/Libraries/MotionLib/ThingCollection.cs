@@ -142,40 +142,12 @@ public class ThingCollection
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="thingId"></param>
-    /// <param name="pose"></param>
+    /// <param name="message"></param>
     //*************************************************************************
-
-    public void SetPose(string thingId, ThingPose pose)
+    
+    public void SetTelem(TThingComLib.Messages.Message message)
     {
-        GetMakeThing(thingId).Pose.SetVals(pose);
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="thingId"></param>
-    /// <param name="jsonString"></param>
-    //*************************************************************************
-
-    public void SetPose(string thingId, string jsonString)
-    {
-        GetMakeThing(thingId).Pose.SetVals(jsonString);
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="jsonString"></param>
-    //*************************************************************************
-
-    public void SetPose(string jsonString)
-    {
-        var jsonObj = Newtonsoft.Json.Linq.JObject.Parse(jsonString);
-        string thingId = jsonObj["id"].ToString();
-        GetMakeThing(thingId).Pose.SetVals(jsonObj);
+        GetMakeThing(message.From).Pose.SetVals(message);
     }
 
     //*************************************************************************

@@ -1,37 +1,26 @@
-﻿/*using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class Repeater : MonoBehaviour
-{
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-}*/
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-//using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
-//using MavLink4Net.Messages.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using RosSharp.RosBridgeClient.Messages.Test;
-using TThingComLib.Messages;
 
 //*** TODO * We define this here to get DialectThingTelem class to build on 
 //*** HoloLens, but it is already defined in TTMobilClient solution, so will
 //*** conflict if copied to that solution
+/*namespace RosSharp.RosBridgeClient
+{
+    public class Message
+    {
+        public virtual string ToString()
+        {
+            return "";
+        }
+    }
+}*/
 namespace RosSharp.RosBridgeClient.Messages.Test
 {
     public class MissionStatus : Message
@@ -56,94 +45,321 @@ namespace RosSharp.RosBridgeClient.Messages.Test
 
 namespace TThingComLib.Messages
 {
+    public class Coord
+    {
+        public double Lat { get; set; }
+        public double Lon { get; set; }
+        public double Alt { get; set; }
 
-public class TThingTelemMessage
-{ }
+        public Coord() { }
 
-public class StartMission : TThingTelemMessage
-{ }
+        public Coord(double lat, double lon, double alt)
+        {
+            Lat = lat;
+            Lon = lon;
+            Alt = alt;
+        }
+    }
+
+    public class Orient
+    {
+        public double Mag { get; set; }
+        public double True { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
+        public double W { get; set; }
+
+        public Orient() { }
+
+        public Orient(double mag, double True, double x, double y, double z, double w)
+        {
+            Mag = mag;
+            this.True = True;
+            X = x;
+            Y = y;
+            Z = z;
+            W = w;
+        }
+    }
+
+    public class Gimbal
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
+        public double W { get; set; }
+
+        public Gimbal() { }
+
+        public Gimbal(double x, double y, double z, double w)
+        {
+            X = x;
+            Y = y;
+            Z = z;
+            W = w;
+        }
+    }
+
+    public class Argument
+    {
+        public string Name { get; set; }
+        public List<string> Values { get; set; }
+    }
+
+    public enum CommandIdEnum
+    { StartMission }
+
+    public class Command
+    {
+        public TThingComLib.Messages.CommandIdEnum CommandId { get; set; }
+
+        public List<TThingComLib.Messages.Argument> Arguments { get; set; }
+
+        public Command() { }
+
+        public Command(TThingComLib.Messages.CommandIdEnum commandId)
+        {
+            this.CommandId = commandId;
+        }
+
+        public Command(TThingComLib.Messages.CommandIdEnum commandId, List<TThingComLib.Messages.Argument> args)
+        {
+            this.CommandId = commandId;
+            this.Arguments = args;
+        }
+    }
+
+    public enum MessageTypeEnum
+    { Telem, Command }
+
+    public class Message
+    {
+        public TThingComLib.Messages.MessageTypeEnum Type { get; set; }
+        public string From { get; set; }
+        public string To { get; set; }
+        public string Time { get; set; }
+        public TThingComLib.Messages.Coord Coord { get; set; }
+        public TThingComLib.Messages.Orient Orient { get; set; }
+        public TThingComLib.Messages.Gimbal Gimbal { get; set; }
+
+        public List<TThingComLib.Messages.Command> Commands { get; set; }
+
+        public Message()
+        { }
+
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="messageType"></param>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <param name="time"></param>
+        //*********************************************************************
+        public Message(TThingComLib.Messages.MessageTypeEnum messageType,
+            string from, string to, string time = null)
+        {
+            if (null == time)
+                time = DateTime.UtcNow.ToBinary().ToString();
+
+            this.Type = messageType;
+            this.From = from;
+            this.To = to;
+            this.Time = time;
+        }
+
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <param name="commandId"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        //*********************************************************************
+        public static TThingComLib.Messages.Message CreateCommand(string from,
+            string to, TThingComLib.Messages.CommandIdEnum commandId, string time = null)
+        {
+            var output = new TThingComLib.Messages.Message(
+                TThingComLib.Messages.MessageTypeEnum.Command, from, to, time);
+            output.Add(new TThingComLib.Messages.Command(commandId));
+            return output;
+        }
+
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <param name="coord"></param>
+        /// <param name="orient"></param>
+        /// <param name="gimbal"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        //*********************************************************************
+        public static TThingComLib.Messages.Message CreateTelem(string from,
+            string to, TThingComLib.Messages.Coord coord,
+            TThingComLib.Messages.Orient orient,
+            TThingComLib.Messages.Gimbal gimbal, string time = null)
+        {
+            var output = new TThingComLib.Messages.Message(
+                TThingComLib.Messages.MessageTypeEnum.Telem, from, to, time)
+            {
+                Coord = coord,
+                Orient = orient,
+                Gimbal = gimbal
+            };
+            return output;
+        }
+
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <param name="commandId"></param>
+        /// <param name="args"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        //*********************************************************************
+        public static TThingComLib.Messages.Message CreateCommand(string from,
+            string to, TThingComLib.Messages.CommandIdEnum commandId,
+            List<TThingComLib.Messages.Argument> args, string time = null)
+        {
+            var output = new TThingComLib.Messages.Message(
+                TThingComLib.Messages.MessageTypeEnum.Command, from, to, time);
+            output.Add(new TThingComLib.Messages.Command(commandId));
+            return output;
+        }
+
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="command"></param>
+        //*********************************************************************
+        public void Add(TThingComLib.Messages.Command command)
+        {
+            if (null == Commands) Commands = new List<Command>();
+            Commands.Add(command);
+        }
+
+        //*********************************************************************
+        /// <summary>
+        /// https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-how-to
+        /// </summary>
+        /// <returns></returns>
+        //*********************************************************************
+        public string Serialize()
+        {
+            var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+            settings.Converters.Add(new StringEnumConverter(new CamelCaseNamingStrategy()));
+            return JsonConvert.SerializeObject(this, settings);
+        }
+
+        //*********************************************************************
+        /// <summary>
+        /// https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-how-to
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        //*********************************************************************
+        public static TThingComLib.Messages.Message DeSerialize(string message)
+        {
+            var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, MissingMemberHandling = MissingMemberHandling.Ignore };
+            settings.Converters.Add(new StringEnumConverter(new CamelCaseNamingStrategy()));
+            return JsonConvert.DeserializeObject<TThingComLib.Messages.Message>(message, settings);
+        }
+    }
+
+    public class StartMission : Message
+    { }
 
 }
 
 namespace TThingComLib
 {
 
-//*** TODO * We can complicate it later, but for now just send ThingTelem on UDP
+    //*** TODO * We can complicate it later, but for now just send ThingTelem on UDP
 
-//*************************************************************************
-/// <summary>
-/// 
-/// </summary>
-//*************************************************************************
-public class TThingCom
-{
-    private RosClientLib.Repeater _telemetryRepeater = new RosClientLib.Repeater();
-    string _udpBroadcaseIP = "192.168.1.255"; //*** TODO * Make this a config item
-    int _thingTelemPort = 45679; //*** TODO * Make this a config item
-    int _minimumTimeSpanMs = 1; //*** TODO * Make this a config item
-
-    //*********************************************************************
+    //*************************************************************************
     /// <summary>
     /// 
     /// </summary>
-    //*********************************************************************
-    public TThingCom()
-    { }
-
-    //*********************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
-    //*********************************************************************
-    public async Task<bool> Connect()
+    //*************************************************************************
+    public class TThingCom
     {
-        return await StartRepeater();
-    }
+        private TThingComLib.Repeater _telemetryRepeater = new TThingComLib.Repeater();
+        string _udpBroadcaseIP = "192.168.1.255"; //*** TODO * Make this a config item
+        int _thingTelemPort = 45679; //*** TODO * Make this a config item
+        int _minimumTimeSpanMs = 1; //*** TODO * Make this a config item
 
-    //*********************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
-    //*********************************************************************
-    public async Task<bool> StartRepeater()
-    {
-        try
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        //*********************************************************************
+        public TThingCom()
+        { }
+
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        //*********************************************************************
+        public async Task<bool> Connect()
         {
-            _telemetryRepeater.AddTransport(
-                RosClientLib.Repeater.TransportEnum.UDP,
-                RosClientLib.Repeater.DialectEnum.ThingTelem, 
-                _udpBroadcaseIP, _thingTelemPort, _minimumTimeSpanMs);
-        }
-        catch (Exception)
-        {
-            //logger.DebugLogError("Fatal Error on permissions: " + ex.Message);
-            //await App.Current.MainPage.DisplayAlert(
-            //    "Error", "Error: " + ex.Message, "Ok");
-            return false;
+            return await StartRepeater();
         }
 
-        return true;
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        //*********************************************************************
+        public async Task<bool> StartRepeater()
+        {
+            try
+            {
+                _telemetryRepeater.AddTransport(
+                    TThingComLib.Repeater.TransportEnum.UDP,
+                    TThingComLib.Repeater.DialectEnum.ThingTelem,
+                    _udpBroadcaseIP, _thingTelemPort, _minimumTimeSpanMs);
+            }
+            catch (Exception)
+            {
+                //logger.DebugLogError("Fatal Error on permissions: " + ex.Message);
+                //await App.Current.MainPage.DisplayAlert(
+                //    "Error", "Error: " + ex.Message, "Ok");
+                return false;
+            }
+
+            return true;
+        }
+
+        //*********************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
+        //*********************************************************************
+        public void Send(TThingComLib.Messages.Message message)
+        {
+            _telemetryRepeater.Send(message);
+        }
+
+
     }
+    //}
 
-    //*********************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="message"></param>
-    //*********************************************************************
-    public void Send(TThingComLib.Messages.TThingTelemMessage message)
-    {
-        _telemetryRepeater.Send(message);
-    }
-
-
-}
-}
-
-namespace RosClientLib
-{
+    //namespace RosClientLib
+    //{
     #region Repeater
 
     //*************************************************************************
@@ -224,7 +440,7 @@ namespace RosClientLib
         /// <returns></returns>
         //*********************************************************************
 
-        public async Task<bool> Send(TThingComLib.Messages.TThingTelemMessage message)
+        public async Task<bool> Send(TThingComLib.Messages.Message message)
         {
             foreach (var tp in _TransportList)
             {
@@ -256,7 +472,7 @@ namespace RosClientLib
         }
 
         public abstract string Translate(RosSharp.RosBridgeClient.Message message);
-        public abstract string Translate(TThingTelemMessage message);
+        public abstract string Translate(TThingComLib.Messages.Message message);
     }
 
     //*************************************************************************
@@ -307,11 +523,13 @@ namespace RosClientLib
         /// <returns></returns>
         //*********************************************************************
 
-        public override string Translate(TThingComLib.Messages.TThingTelemMessage message)
+        public override string Translate(TThingComLib.Messages.Message message)
         {
             string outMessage = "";
 
-            switch (message)
+            outMessage = message.Serialize();
+
+            /*switch (message)
             {
                 case TThingComLib.Messages.StartMission ms:
                     string commandFormat =
@@ -320,7 +538,7 @@ namespace RosClientLib
                     break;
                 default:
                     throw new NotImplementedException("Message type translation not implemented");
-            }
+            }*/
 
             return outMessage;
         }
@@ -366,7 +584,7 @@ namespace RosClientLib
             return true;
         }
 
-        public async Task<bool> Send(TThingTelemMessage message)
+        public async Task<bool> Send(TThingComLib.Messages.Message message)
         {
             if (_stopwatch.ElapsedMilliseconds > _MinimumTimeSpanMs)
             {
@@ -411,8 +629,8 @@ namespace RosClientLib
             sock = new System.Net.Sockets.Socket(
                 System.Net.Sockets.AddressFamily.InterNetwork,
                 System.Net.Sockets.SocketType.Dgram,
-                System.Net.Sockets.ProtocolType.Udp) 
-                {ExclusiveAddressUse = false, EnableBroadcast = true};
+                System.Net.Sockets.ProtocolType.Udp)
+            { ExclusiveAddressUse = false, EnableBroadcast = true };
 
             ipaddr = System.Net.IPAddress.Parse(_destIP);
             endpoint = new System.Net.IPEndPoint(ipaddr, _destPort);
@@ -441,4 +659,5 @@ namespace RosClientLib
 
     #endregion
 }
+
 

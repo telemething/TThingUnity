@@ -31,7 +31,11 @@ public class UICommandHandler : MonoBehaviour
         try
         {
             Debug.Log("--- UICommandHandler:SendCommand_RunMission()");
-            _tthingCom.Send(new StartMission());
+
+            //_tthingCom.Send(new StartMission());
+
+            _tthingCom.Send(TThingComLib.Messages.Message.CreateCommand(
+                "from","to", TThingComLib.Messages.CommandIdEnum.StartMission));
         }
         catch (Exception e)
         {

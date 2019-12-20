@@ -389,9 +389,8 @@ public class ThingMotion
             var text = Encoding.ASCII.GetString(dataPkt, 0, dataLength);
             print(">> " + text);
 
-            _things.SetPose(text);
-
-            //_pose.SetVals(text);
+            var message = TThingComLib.Messages.Message.DeSerialize(text);
+            _things.SetTelem(message);
         }
         catch (Exception e)
         {
