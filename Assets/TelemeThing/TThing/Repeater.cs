@@ -108,7 +108,7 @@ namespace TThingComLib.Messages
     }
 
     public enum CommandIdEnum
-    { StartMission }
+    { StartMission, StopDrone, ReturnHome, LandDrone }
 
     public class Command
     {
