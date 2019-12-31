@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using GeoLib;
+using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.UI;
 using Microsoft.MixedReality.Toolkit.Utilities;
 using Microsoft.MixedReality.Toolkit.Utilities.Solvers;
@@ -134,6 +135,25 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
+    ///We translate objects from real world geo coords to local game coords
+    ///in the ENU ref. At the beginning of operation, the main camera is 
+    ///pointing due north in ENU. In order to make the main camera pose
+    ///match the real world pose we need to rotate it. We calculate the
+    ///required rotation from the orient value of the pose given to us by
+    ///the self object (which is a MPU/compass in the real world).
+    /// </summary>
+    /// <param name="pose"></param>
+    //*************************************************************************
+    void AlignToCompass(ThingPose pose)
+    {
+        //filter out noise, only adjust when necessary
+
+        //set the rotation of the play space to true compass
+        MixedRealityPlayspace.Rotation = Quaternion.Euler(Vector3.up * (float)pose.Orient.True);
+    }
+
+    //*************************************************************************
+    /// <summary>
     /// 
     /// </summary>
     /// <param name="thing"></param>
@@ -147,6 +167,9 @@ public class ThingsManager : MonoBehaviour
 
         if (null == thing.GameObjectObject)
             thing.GameObjectObject = ThingGameObject.CreateGameObject(thing);
+
+        // set the rotation of world space to true compass of self
+        AlignToCompass(thing.Pose);
 
         _self = thing;
     }
@@ -284,9 +307,18 @@ public class ThingGameObject
         GameObject objPrefab = Resources.Load("Chevron") as GameObject;
         _directionIndicator.DirectionIndicatorObject = objPrefab;
         _directionIndicator.Cursor = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        _directionIndicator.Cursor.transform.position = new Vector3(0,0,10.0f);
+        _directionIndicator.Cursor.transform.position = new Vector3(0,0,20.0f);
         _directionIndicator.Cursor.transform.localScale = new Vector3(.1f,.1f,.1f);
-        _directionIndicator.MetersFromCursor = 5f;
+        _directionIndicator.MetersFromCursor = 2f;
+
+        var rv = _directionIndicator.Cursor.AddComponent<
+            Microsoft.MixedReality.Toolkit.Utilities.Solvers.RadialView>();
+        rv.MinDistance = 19.0f;
+        rv.MaxDistance = 21.0f;
+        rv.MinViewDegrees = 1.0f;
+        rv.MaxViewDegrees = 5.0f;
+        rv.MoveLerpTime = 0.5f;
+        rv.RotateLerpTime = 0.5f;
 
         _directionIndicator.Awake2();
     }
