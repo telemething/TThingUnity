@@ -142,6 +142,6 @@ public class UICommandHandler : MonoBehaviour
     //*************************************************************************
     public void SendCommand_HideDroneMenu()
     {
-        //SendTtCommand("aDrone", CommandIdEnum.StartMission);
+        DroneMenuHandler.ShowMenu(false);
     }
 }

@@ -26,6 +26,12 @@ public class DroneMenuHandler : MonoBehaviour
     void Update()
     { }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="trueToShow"></param>
+    //*************************************************************************
     public static void ShowMenu(bool trueToShow)
     {
         _droneMenu = GameObject.Find("DroneMenu");
