@@ -368,6 +368,54 @@ public class ThingGameObject
     /// </summary>
     //*************************************************************************
 
+    public ThingLandingPadObject AddLandingPad(Vector3 uavPosition)
+    {
+        ThingLandingPadObject landingPad = null;
+
+        //Find the spot on the terrain below the UAV.
+        //The arguments are the position of the UAV, and the down vector
+        if (FindRayTerrainIntersection(
+            uavPosition,
+            Vector3.down,
+            out var padPosition))
+        {
+            landingPad = new ThingLandingPadObject();
+            landingPad._gameObject.transform.position = padPosition;
+        }
+
+        return landingPad;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
+    public ThingBreadcrumbObject AddBreadcrumb(Vector3 uavPosition)
+    {
+        ThingBreadcrumbObject breadcrumb = null;
+
+        //Find the spot on the terrain below the UAV.
+        //The arguments are the position of the UAV, and the down vector
+        if (FindRayTerrainIntersection(
+            uavPosition,
+            Vector3.down,
+            out var padPosition))
+        {
+            breadcrumb = new ThingBreadcrumbObject();
+            breadcrumb._gameObject.transform.position = padPosition;
+        }
+
+        return breadcrumb;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
     public void SetupGimbal()
     {
         var xform = _gameObject.transform.Find("Gimbal");
@@ -621,6 +669,14 @@ public class ThingGameObject
         return new UnityEngine.Quaternion(quatIn.X, quatIn.Y, quatIn.Z, quatIn.W);
     }
 
+    public static Vector3 ConvertPoint(PointENU pointENU)
+    {
+        return new Vector3(
+            Convert.ToSingle(pointENU.E), 
+            Convert.ToSingle(pointENU.U),
+            Convert.ToSingle(pointENU.N));
+    }
+
     //*************************************************************************
     /// <summary>
     /// 
@@ -713,6 +769,8 @@ public class ThingGameObject
         SetHalo();
         SetGimbal(ConvertQuat(_thing.Pose.GimbalOrient.Quat));
         SetGimbalCamera(_gimbalCamera);
+
+        //AddLandingPad(ConvertPoint(this._thing.Pose.PointEnu));
     }
 
     //*************************************************************************
@@ -838,7 +896,12 @@ public class ThingGameObject
 
 public class ThingUavObject : ThingGameObject
 {
+    private bool _autoLandingPad = true;
+    private bool _leaveBreadcrumbs = false;
+
     private static int _count = 0;
+    private ThingLandingPadObject _landingPad = null;
+    private List<ThingBreadcrumbObject> _breadcrumbs = new List<ThingBreadcrumbObject>();
 
     //*************************************************************************
     /// <summary>
@@ -854,7 +917,7 @@ public class ThingUavObject : ThingGameObject
         //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
         GameObject resourceObject = Resources.Load("UavObject") as GameObject;
         base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
-        base._gameObject.name = "UAV"  + _count++.ToString();
+        base._gameObject.name = "UAV" + _count++.ToString();
         base._gameObject.AddComponent<MeshRenderer>();
         base._gameObject.transform.localScale = new Vector3(1, 1, 1);
         base._gameObject.transform.position = new Vector3(0, 0, 0);
@@ -875,10 +938,134 @@ public class ThingUavObject : ThingGameObject
     public override void Set(Thing thing)
     {
         base.Set(thing);
+
+        if (thing.Pose?.PointEnu != null)
+        {
+            if (_autoLandingPad) if (null == _landingPad)
+                _landingPad = AddLandingPad(ConvertPoint(thing.Pose.PointEnu));
+            if (_leaveBreadcrumbs)
+                _breadcrumbs.Add(AddBreadcrumb(ConvertPoint(thing.Pose.PointEnu)));
+        }
     }
 }
 
 #endregion //ThingUavObject
+
+#region ThingLandingPadObject
+
+//*************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*************************************************************************
+
+public class ThingLandingPadObject : ThingGameObject
+{
+    private static int _count = 0;
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
+    public ThingLandingPadObject()
+    {
+        //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
+        GameObject resourceObject = Resources.Load("LandingPad") as GameObject;
+        base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
+        base._gameObject.name = "LANDINGPAD" + _count++.ToString();
+        base._gameObject.AddComponent<MeshRenderer>();
+        base._gameObject.transform.localScale = new Vector3(2, 2, 2);
+        base._gameObject.transform.position = new Vector3(0, 0, 0);
+        //base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+    }
+
+    public ThingLandingPadObject(Vector3 position)
+    {
+        //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
+        GameObject resourceObject = Resources.Load("LandingPad") as GameObject;
+        base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
+        base._gameObject.name = "LANDINGPAD" + _count++.ToString();
+        base._gameObject.AddComponent<MeshRenderer>();
+        base._gameObject.transform.localScale = new Vector3(4, 4, 4);
+        base._gameObject.transform.position = position;
+        //base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="thing"></param>
+    //*************************************************************************
+    public override void Set(Thing thing)
+    {
+        base.Set(thing);
+    }
+}
+
+#endregion //ThingLandingPadObject
+
+#region ThingBreadcrumbObject
+
+//*************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*************************************************************************
+
+public class ThingBreadcrumbObject : ThingGameObject
+{
+    private static int _count = 0;
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
+    public ThingBreadcrumbObject()
+    {
+        //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
+        GameObject resourceObject = Resources.Load("Breadcrumb") as GameObject;
+        base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
+        base._gameObject.name = "LANDINGPAD" + _count++.ToString();
+        base._gameObject.AddComponent<MeshRenderer>();
+        base._gameObject.transform.localScale = new Vector3(.5f, .5f, .5f);
+        base._gameObject.transform.position = new Vector3(0, 0, 0);
+        //base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+    }
+
+    public ThingBreadcrumbObject(Vector3 position)
+    {
+        //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
+        GameObject resourceObject = Resources.Load("Breadcrumb") as GameObject;
+        base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
+        base._gameObject.name = "BREADCRUMB" + _count++.ToString();
+        base._gameObject.AddComponent<MeshRenderer>();
+        base._gameObject.transform.localScale = new Vector3(.5f, .5f, .5f);
+        base._gameObject.transform.position = position;
+        //base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="thing"></param>
+    //*************************************************************************
+    public override void Set(Thing thing)
+    {
+        base.Set(thing);
+    }
+}
+
+#endregion //ThingBreadcrumbObject
 
 #region ThingPersonObject
 
