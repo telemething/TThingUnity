@@ -20,12 +20,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.UI;
 using Microsoft.MixedReality.Toolkit.Utilities;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 using UnityEngine.Windows.Speech;
+using UnityEngine.XR.WSA;
 
 namespace Esri.PrototypeLab.HoloLens.Demo {
     public class TerrainMap : MonoBehaviour {
@@ -61,10 +63,13 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
 
             // Repond to single and double tap.
             this._gestureRecognizer.TappedEvent += (source, count, ray) => {
-                switch (count) {
+                switch (count)
+                {
                     case 1:
-                        if (this._isMoving) {
-                            if (GazeManager.Instance.Hit) {
+                        if (this._isMoving)
+                        {
+                            if (GazeManager.Instance.Hit)
+                            {
                                 // Cease moving
                                 this._isMoving = false;
 
@@ -73,18 +78,23 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
 
                                 //
                                 var terrain = this.transform.Find("terrain");
-                                if (terrain == null) {
+                                if (terrain == null)
+                                {
                                     // Hide footprint
                                     this.transform.Find("base").GetComponent<MeshRenderer>().material.color = new Color32(100, 100, 100, 100);
 
                                     // Add Terrain
                                     this.StartCoroutine(this.AddTerrain(Place.PresetPlaces[0]));
-                                } else {
+                                }
+                                else
+                                {
                                     // Restore hit test
                                     terrain.gameObject.layer = 0;
                                 }
                             }
-                        } else {
+                        }
+                        else
+                        {
                             // If single tap on stationary terrain then perform reverse geocode.
                             // Exit if nothing found
                             if (!GazeManager.Instance.Hit) { return; }
@@ -99,7 +109,8 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
                         break;
                     case 2:
                         // Resume footprint/terrain movement.
-                        if (!this._isMoving) {
+                        if (!this._isMoving)
+                        {
                             // Set moving flag for update method
                             this._isMoving = true;
 
@@ -114,6 +125,96 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
             };
 
             */
+
+            //*** TODO * markw
+            //Upgrading HTK GazeManager to MRTK v2 Pointer(HandRay…)
+            //https://stackoverflow.com/questions/58273969/upgrading-htk-gazemanager-to-mrtk-v2-pointer-handray
+            //Configuring mesh observers via code
+            //https://microsoft.github.io/MixedRealityToolkit-Unity/Documentation/SpatialAwareness/UsageGuide.html
+
+            // Repond to single and double tap.
+            this._gestureRecognizer.TappedEvent += (source, count, ray) => {
+                switch (count)
+                {
+                    case 1:
+                        if (this._isMoving)
+                        {
+                            //if (GazeManager.Instance.Hit) //*** MW
+                            if (CoreServices.InputSystem.GazeProvider.GazeTarget != null)
+                            {
+                                // Cease moving
+                                this._isMoving = false;
+
+                                //SurfaceObserver.
+
+                                // Stop mapping observer                            //*** MW
+                                //SpatialMappingManager.Instance.StopObserver();    //*** MW
+
+                                // Suspend Mesh Observation from all Observers
+                                CoreServices.SpatialAwarenessSystem.SuspendObservers();
+
+                                //SpatialMapping
+
+                                //
+                                var terrain = this.transform.Find("terrain");
+                                if (terrain == null)
+                                {
+                                    // Hide footprint
+                                    this.transform.Find("base").GetComponent<MeshRenderer>().material.color = new Color32(100, 100, 100, 100);
+
+                                    // Add Terrain
+                                    this.StartCoroutine(this.AddTerrain(Place.PresetPlaces[0]));
+                                }
+                                else
+                                {
+                                    // Restore hit test
+                                    terrain.gameObject.layer = 0;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // If single tap on stationary terrain then perform reverse geocode.
+                            // Exit if nothing found
+
+                            //if (!GazeManager.Instance.Hit) //*** MW
+                            if (CoreServices.InputSystem.GazeProvider.GazeTarget == null)
+                            { return; }
+
+                            //if (GazeManager.Instance.FocusedObject == null)   //*** MW
+                            //{ return; }                                       //*** MW
+
+                            // Exit if not terrain
+                            //if (GazeManager.Instance.FocusedObject.GetComponent<Terrain>() == null) //*** MW
+                            if (CoreServices.InputSystem.GazeProvider.GazeTarget.GetComponent<Terrain>() == null) 
+                            { return; }
+
+                            // Get location
+                            //this.StartCoroutine(this.AddStreetAddress(GazeManager.Instance.Position)); //*** MW
+                            this.StartCoroutine(this.AddStreetAddress(CoreServices.InputSystem.GazeProvider.HitPosition));
+                        }
+                        break;
+                    case 2:
+                        // Resume footprint/terrain movement.
+                        if (!this._isMoving)
+                        {
+                            // Set moving flag for update method
+                            this._isMoving = true;
+
+                            // Make terrain hittest invisible
+                            this.GetComponentInChildren<Terrain>().gameObject.layer = 2;
+
+                            // Resume mapping observer                          //*** MW
+                            //SpatialMappingManager.Instance.StartObserver();   //*** MW
+
+                            // Resume Mesh Observation from all Observers
+                            CoreServices.SpatialAwarenessSystem.ResumeObservers();
+                        }
+                        break;
+                }
+            };
+
+            //*/
 
             this._gestureRecognizer.StartCapturingGestures();
 
@@ -151,16 +252,26 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
             // Exit if moving is not enabled.
             if (!this._isMoving) { return; }
 
-            /*** TODO* markw
+            //*** TODO* markw
 
             // Exit if Gaze Manager not created.
-            if (GazeManager.Instance == null) { return; }
+            //if (GazeManager.Instance == null) //*** MW
+            if (CoreServices.InputSystem == null)
+            { return; }
+
+            if (CoreServices.InputSystem.GazeProvider == null)
+            { return; }
 
             // Reposition terra
+            //this.transform.position =                                                                         //*** MW
+            //    GazeManager.Instance.Hit ?                                                                    //*** MW
+            //        GazeManager.Instance.Position + TerrainMap.HIT_OFFSET * GazeManager.Instance.Normal :     //*** MW
+            //        Camera.main.transform.position + TerrainMap.HOVER_OFFSET * Camera.main.transform.forward; //*** MW
+
             this.transform.position =
-                GazeManager.Instance.Hit ?
-                GazeManager.Instance.Position + TerrainMap.HIT_OFFSET * GazeManager.Instance.Normal :
-                Camera.main.transform.position + TerrainMap.HOVER_OFFSET * Camera.main.transform.forward;
+                CoreServices.InputSystem.GazeProvider.GazeTarget ?
+                    CoreServices.InputSystem.GazeProvider.GazeTarget.transform.position + TerrainMap.HIT_OFFSET * CoreServices.InputSystem.GazeProvider.GazeTarget.transform.position.normalized :
+                    Camera.main.transform.position + TerrainMap.HOVER_OFFSET * Camera.main.transform.forward;
 
             // *** Cannot rotate terrains! ***
             //this.transform.rotation = new Quaternion(
@@ -172,11 +283,12 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
 
             // Update footprint color.
             this.transform.Find("base").GetComponent<MeshRenderer>().material.color =
-                GazeManager.Instance.Hit ? 
+                //GazeManager.Instance.Hit ?                                                //*** MW
+                CoreServices.InputSystem.GazeProvider.GazeTarget ?
                 new Color32(0, 255, 0, 100) :
                 new Color32(255, 0, 0, 100);
 
-            */
+            //*/
         }
         private IEnumerator AddTerrain(Place place) {
             // Store current place
