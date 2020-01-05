@@ -15,6 +15,19 @@ using UnityEngine.UI;
 using NetStandardClassLibraryT1;
 //using NetStandardClassLibraryT2;
 
+using System.Runtime.InteropServices;
+
+namespace T1
+{
+    public class T2
+    {
+        private const string DLL = "__Internal";
+        [DllImport(DLL)]
+        public static extern int
+            CountLettersInString([MarshalAs(UnmanagedType.LPWStr)]string str);
+    }
+}
+
 #region ThingsManager
 
 //*************************************************************************
@@ -91,6 +104,9 @@ public class ThingsManager : MonoBehaviour
     {
         _TM = ThingMotion.GetPoseObject(Port);
         _TM.SetThing(MyThingId, Thing.TypeEnum.Person, Thing.SelfEnum.Self, Thing.RoleEnum.Observer);
+
+        //var t1 = new T1.T2();
+        //var lis = T1.T2.CountLettersInString("1234");
 
         MyUtilities utils = new MyUtilities();
         utils.AddValues(2, 3);

@@ -35,7 +35,7 @@ namespace Esri.PrototypeLab.HoloLens.Unity {
         [DllImport(DLL)]
         public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, uint[] pData);
         [DllImport(DLL)]
-        public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, float[] pData);
+        public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nDim, int nCols, int nRows, int nBands, int dataType, float[] pData);
         [DllImport(DLL)]
         public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, double[] pData);
         [DllImport(DLL)]

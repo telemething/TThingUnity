@@ -33,7 +33,7 @@ namespace Esri.PrototypeLab.HoloLens.Unity {
 
             byte[] bytes = www.bytes;
 
-            uint[] info = new uint[7];
+            uint[] info = new uint[10];     //*** MW
             double[] data = new double[3];
 
             uint hr = LercDecoder.lerc_getBlobInfo(bytes, (uint)bytes.Length, info, data, info.Length, data.Length);
@@ -45,11 +45,12 @@ namespace Esri.PrototypeLab.HoloLens.Unity {
 
             int version = (int)info[0]; // version
             int type = (int)info[1];    // data type
-            int cols = (int)info[2];    // nCols
-            int rows = (int)info[3];    // nRows
-            int bands = (int)info[4];   // nBands
-            int valid = (int)info[5];   // num valid pixels
-            int size = (int)info[6];    // blob size
+            int dim = (int)info[2];     // nDim         //*** MW
+            int cols = (int)info[3];    // nCols
+            int rows = (int)info[4];    // nRows
+            int bands = (int)info[5];   // nBands
+            int valid = (int)info[6];   // num valid pixels
+            int size = (int)info[7];    // blob size
 
             //float min = (float)dataArray[0]; // z min
             //float max = (float)dataArray[1]; // z max
@@ -59,7 +60,8 @@ namespace Esri.PrototypeLab.HoloLens.Unity {
             uint values = (uint)(cols * rows * bands);
 
             float[] heights = new float[values];
-            uint hr2 = LercDecoder.lerc_decode(bytes, (uint)bytes.Length, processed, cols, rows, bands, type, heights);
+            //uint hr2 = LercDecoder.lerc_decode(bytes, (uint)bytes.Length, processed, cols, rows, bands, type, heights);
+            uint hr2 = LercDecoder.lerc_decode(bytes, (uint)bytes.Length, processed, dim, cols, rows, bands, type, heights);    //*** MW
             if (hr2 > 0) {
                 Debug.Log(string.Format("function lerc_decode() failed with error code {0}.", hr2));
                 yield break;
