@@ -165,7 +165,7 @@ namespace Microsoft.MixedReality.Toolkit
             #else
                 Debug.Assert(typeof(T).IsInterface, "UnregisterHandler must be called with an interface as a generic parameter.");
             #endif
-            Debug.Assert(typeof(T).IsAssignableFrom(handler.GetType()), "Handler passed to UnregisterHandler doesn't implement a type given as generic parameter.");
+             //Debug.Assert(typeof(T).IsAssignableFrom(handler.GetType()), "Handler passed to UnregisterHandler doesn't implement a type given as generic parameter."); //*** MW
 
             TraverseEventSystemHandlerHierarchy<T>(handler, UnregisterHandler);
         }
