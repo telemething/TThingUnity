@@ -378,14 +378,14 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
 
             // Construct height map.
             float[,] data = new float[
-                terrainData.heightmapWidth,
-                terrainData.heightmapHeight
+                terrainData.heightmapResolution,
+                terrainData.heightmapResolution
             ];
-            for (int x = 0; x < terrainData.heightmapWidth; x++) {
-                for (int y = 0; y < terrainData.heightmapHeight; y++) {
+            for (int x = 0; x < terrainData.heightmapResolution; x++) {
+                for (int y = 0; y < terrainData.heightmapResolution; y++) {
                     // Scale elevation from 257x257 to 33x33
-                    var x2 = Convert.ToInt32((double)x * 256 / (terrainData.heightmapWidth - 1));
-                    var y2 = Convert.ToInt32((double)y * 256 / (terrainData.heightmapHeight - 1));
+                    var x2 = Convert.ToInt32((double)x * 256 / (terrainData.heightmapResolution - 1));
+                    var y2 = Convert.ToInt32((double)y * 256 / (terrainData.heightmapResolution - 1));
 
                     // Find index in Esri elevation array
                     var id = y2 * 257 + x2;
@@ -403,7 +403,7 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
                     var h4 = h3 + TERRAIN_BASE_HEIGHT;
 
                     // Final height.                   
-                    data[terrainData.heightmapHeight - 1 - y, x] = h4;                                      
+                    data[terrainData.heightmapResolution - 1 - y, x] = h4;                                      
                 }
             }
             terrainData.SetHeights(0, 0, data);
@@ -448,30 +448,30 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
             var step = SIZE / 32f;
 
             // Front 
-            for (int x = 0; x < terrainData.heightmapWidth; x++) {
+            for (int x = 0; x < terrainData.heightmapResolution; x++) {
                 vertices.Add(new Vector3(x * step, 0f, 0f));
                 vertices.Add(new Vector3(x * step, data[0, x], 0f));
             }
             yield return null;
 
             // Right
-            for (int z = 0; z < terrainData.heightmapHeight; z++) {
+            for (int z = 0; z < terrainData.heightmapResolution; z++) {
                 vertices.Add(new Vector3(SIZE, 0f, z * step));
-                vertices.Add(new Vector3(SIZE, data[z, terrainData.heightmapWidth - 1], z * step));
+                vertices.Add(new Vector3(SIZE, data[z, terrainData.heightmapResolution - 1], z * step));
             }
             yield return null;
 
             // Back
-            for (int x = 0; x < terrainData.heightmapWidth; x++) {
-                var xr = terrainData.heightmapWidth - 1 - x;
+            for (int x = 0; x < terrainData.heightmapResolution; x++) {
+                var xr = terrainData.heightmapResolution - 1 - x;
                 vertices.Add(new Vector3(xr * step, 0f, SIZE));
-                vertices.Add(new Vector3(xr * step, data[terrainData.heightmapHeight - 1, xr], SIZE));
+                vertices.Add(new Vector3(xr * step, data[terrainData.heightmapResolution - 1, xr], SIZE));
             }
             yield return null;
 
             // Left
-            for (int z = 0; z < terrainData.heightmapHeight; z++) {
-                var zr = terrainData.heightmapHeight - 1 - z;
+            for (int z = 0; z < terrainData.heightmapResolution; z++) {
+                var zr = terrainData.heightmapResolution - 1 - z;
                 vertices.Add(new Vector3(0f, 0f, zr * step));
                 vertices.Add(new Vector3(0f, data[zr, 0], zr * step));
             }
