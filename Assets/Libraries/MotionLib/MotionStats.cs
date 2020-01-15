@@ -1,6 +1,6 @@
-﻿#if UNITY_EDITOR
-#undef UNITY_WSA_10_0
-#endif 
+﻿//#if UNITY_EDITOR
+//#undef UNITY_WSA_10_0
+//#endif 
 
 using System;
 using System.Collections;
@@ -11,7 +11,7 @@ using System.Threading;
 using MessageLib;
 
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
 using System.Runtime.Serialization.Json;
 using System.Threading.Tasks;
 #endif
@@ -77,7 +77,7 @@ namespace System.IO
             set;
         }
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
         public T Tail => buffer[tail];
 #endif
 
@@ -469,7 +469,7 @@ namespace MotionLib
         /// 
         //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
         private async Task CaptureEndMessageTimer()
         {
             await Task.Delay(_Config.PostTriggerSeconds * 1000);
@@ -493,7 +493,7 @@ namespace MotionLib
         /// 
         //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
 
         public async Task GetStatsFromBuffer()
         {
@@ -538,7 +538,7 @@ namespace MotionLib
                 GetSumD2(motionRecordList);
                 CalcStdDev();
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
                 //*** Send the stat record to the caller ***
                 Task.Run(() => _StatsReadyCallback(_cmr));
 #else
@@ -731,7 +731,7 @@ namespace MotionLib
         /// 
         //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
 
         public async Task GetStatsAsync(IEnumerable<Motion.MotionStruct> motionRecordList)
         {
@@ -873,7 +873,7 @@ namespace MotionLib
         /// 
         //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
         public async Task StartCollecting(MessageLib.MessageRecordReceivedDelegate statsReadyCallback)
         {
             _StatsReadyCallback = statsReadyCallback;
@@ -908,7 +908,7 @@ namespace MotionLib
         /// 
         //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
 
         private async Task SetEvent(Motion.MotionStructEventTypeEnum eventType)
         {
@@ -954,7 +954,7 @@ namespace MotionLib
         /// 
         //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
 
         public async Task SetEventAsync(Motion.MotionStructEventTypeEnum eventType)
         {

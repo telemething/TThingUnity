@@ -1,5 +1,5 @@
 ﻿//#if UNITY_EDITOR
-#undef UNITY_WSA_10_0
+//#undef UNITY_WSA_10_0
 //#endif 
 
 // Preproc values
@@ -25,7 +25,7 @@ using Formatting = System.Xml.Formatting;
 //using UnityEngine.JsonUtility;
 
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
 using Windows.Networking.Sockets;
 using System.Threading.Tasks;
 #endif
@@ -42,7 +42,7 @@ using System.Threading.Tasks;
 public class ThingMotion
 {
 
-#if !UNITY_WSA_10_0
+#if !UNITY_WSA_10_0_not
     Thread _receiveThread;
     UdpClient _client;
 #else
@@ -153,7 +153,7 @@ public class ThingMotion
     }
 
 
-#if !UNITY_WSA_10_0
+#if !UNITY_WSA_10_0_not
 
     //*************************************************************************
     ///
@@ -206,7 +206,9 @@ public class ThingMotion
             try
             {
                 var data = _client.Receive(ref anyIp);
-                
+
+                //T1.CLogger.LogThis("ReceiveData() : received data");
+
                 switch (_mode)
                 {
                     case modeEnum.motion:
@@ -340,7 +342,7 @@ public class ThingMotion
 
     public void OnDisable()
     {
-#if !UNITY_WSA_10_0
+#if !UNITY_WSA_10_0_not
         if (_receiveThread != null)
             _receiveThread.Abort();
 
@@ -358,7 +360,7 @@ public class ThingMotion
 
     public void OnApplicationQuit()
     {
-#if !UNITY_WSA_10_0
+#if !UNITY_WSA_10_0_not
         if (_receiveThread != null)
             _receiveThread.Abort();
 #endif
@@ -378,7 +380,7 @@ public class ThingMotion
     /// 
     //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
     private async Task ProcessPoseRecords(byte[] dataPkt, int dataLength)
 #else
     private void ProcessPoseRecords(byte[] dataPkt, int dataLength)
@@ -388,6 +390,8 @@ public class ThingMotion
         {
             var text = Encoding.ASCII.GetString(dataPkt, 0, dataLength);
             print(">> " + text);
+
+            T1.CLogger.LogThis("ProcessPoseRecords() : " + text);
 
             var message = TThingComLib.Messages.Message.DeSerialize(text);
             _things.SetTelem(message);
@@ -519,7 +523,7 @@ public class ThingMotion
     /// 
     //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
     private async Task ProcessMotionRecords(byte[] dataPkt, int dataLength)
 #else
     private void ProcessMotionRecords(byte[] dataPkt, int dataLength)
@@ -563,7 +567,7 @@ public class ThingMotion
                     _stopwatch = Stopwatch.StartNew();
                 }
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
                 var deltaTime = ms.ElapsedTimeMs - (_stopwatch.ElapsedMilliseconds + _startTimeMs);
 
                 if (0 < deltaTime)
@@ -594,7 +598,7 @@ public class ThingMotion
 
     private const int StatsInterval = 1000;
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
     private void StatsTimer(object state)
     {
         _MotionStats.SetEventAsync(MotionLib.Motion.MotionStructEventTypeEnum.Trigger);
@@ -616,7 +620,7 @@ public class ThingMotion
 
     public void TriggerEvent()
     {
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
         TriggerEventAsync();
 #endif
     }
@@ -633,7 +637,7 @@ public class ThingMotion
     /// 
     //*********************************************************************
 
-#if UNITY_WSA_10_0
+#if UNITY_WSA_10_0_not
     public async Task StartCollectingStats(MessageLib.MessageRecordReceivedDelegate statsReadyCallback)
     {
         var motionStatsConfig = new MotionLib.MotionStatsConfig()

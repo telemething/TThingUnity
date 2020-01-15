@@ -16,28 +16,44 @@ using NetStandardClassLibraryT1;
 //using NetStandardClassLibraryT2;
 
 using System.Runtime.InteropServices;
+using Microsoft.MixedReality.Toolkit.Examples.Demos.EyeTracking.Logging;
+using T1;
 
 namespace T1
 {
-    public class T2
+    public class CLogger
     {
+#if UNITY_EDITOR
+        public static int CountLettersInString(string str)
+        { return 0; }
+
+        public static void LogThis(string str)
+        { }
+#else
         private const string DLL = "__Internal";
         [DllImport(DLL)]
         public static extern int
             CountLettersInString([MarshalAs(UnmanagedType.LPWStr)]string str);
+
+        [DllImport(DLL)]
+        public static extern void
+            LogThis([MarshalAs(UnmanagedType.LPWStr)]string str);
+#endif
     }
 }
 
-#region ThingsManager
+    #region ThingsManager
 
-//*************************************************************************
-/// <summary>
-/// 
-/// </summary>
-//*************************************************************************
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
 
-public class ThingsManager : MonoBehaviour
+    public class ThingsManager : MonoBehaviour
 {
+    //private T1.CLogger _cLogger;
+
     public int Port = 45679;
     public UnityEngine.UI.Text TextObject;
     public string MyThingId = "self";
@@ -108,6 +124,8 @@ public class ThingsManager : MonoBehaviour
         //var t1 = new T1.T2();
         //var lis = T1.T2.CountLettersInString("1234");
 
+        T1.CLogger.LogThis("ThingsManager.Start()");
+
         MyUtilities utils = new MyUtilities();
         utils.AddValues(2, 3);
         print("2 + 3 = " + utils.c);
@@ -133,6 +151,8 @@ public class ThingsManager : MonoBehaviour
         //at each update, we check max and min distances of the things
         _maxThingDistance = _maxMaxThingDistance;
         _minThingDistance = _minMinThingDistance;
+
+        //T1.CLogger.LogThis("ThingsManager.Update()");
 
         things?.ForEach(thing => {if(thing.Self == Thing.SelfEnum.Self) SetSelf(thing); else SetOther(thing); });
     }

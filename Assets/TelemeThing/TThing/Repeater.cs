@@ -272,7 +272,20 @@ namespace TThingComLib.Messages
         {
             var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, MissingMemberHandling = MissingMemberHandling.Ignore };
             settings.Converters.Add(new StringEnumConverter(new CamelCaseNamingStrategy()));
-            return JsonConvert.DeserializeObject<TThingComLib.Messages.Message>(message, settings);
+            //return JsonConvert.DeserializeObject<TThingComLib.Messages.Message>(message, settings);
+
+            TThingComLib.Messages.Message ret = null;
+
+            try
+            {
+                ret = JsonConvert.DeserializeObject<TThingComLib.Messages.Message>(message, settings);
+            }
+            catch(Exception ex)
+            {
+                T1.CLogger.LogThis("DeSerialize() " + message);
+            }
+
+            return ret;
         }
     }
 
