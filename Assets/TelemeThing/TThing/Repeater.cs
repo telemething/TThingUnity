@@ -8,6 +8,17 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using RosSharp.RosBridgeClient.Messages.Test;
 
+//*****************************************************************************
+//* The reference to Newtonsoft.JSON here requires special handling in order
+//* to function correctly when building for Unity IL2CPP. Using Nuget to import
+//* Newtonsoft.JSON does NOT work, it will fail at runtime due to reflection.
+//* 1) In Unity, import the 'JSON.NET for Unity' asset.
+//* 2) If the solution refers to other projects which themselves refer to
+//*    Newtonsoft.JSON, then they must be also refer to 'JSON.NET for Unity'.
+//* 3) To do that, simply refer them to refer to:
+//*    "..\Assets\JsonDotNet\Assemblies\Windows\Newtonsoft.Json.dll"
+//*****************************************************************************
+
 //*** TODO * We define this here to get DialectThingTelem class to build on 
 //*** HoloLens, but it is already defined in TTMobilClient solution, so will
 //*** conflict if copied to that solution
@@ -257,7 +268,8 @@ namespace TThingComLib.Messages
         public string Serialize()
         {
             var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-            settings.Converters.Add(new StringEnumConverter(new CamelCaseNamingStrategy()));
+            //settings.Converters.Add(new StringEnumConverter(new CamelCaseNamingStrategy()));
+            settings.Converters.Add(new StringEnumConverter(true));
             return JsonConvert.SerializeObject(this, settings);
         }
 
@@ -271,7 +283,8 @@ namespace TThingComLib.Messages
         public static TThingComLib.Messages.Message DeSerialize(string message)
         {
             var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, MissingMemberHandling = MissingMemberHandling.Ignore };
-            settings.Converters.Add(new StringEnumConverter(new CamelCaseNamingStrategy()));
+            //settings.Converters.Add(new StringEnumConverter(new CamelCaseNamingStrategy()));
+            settings.Converters.Add(new StringEnumConverter(true));
             //return JsonConvert.DeserializeObject<TThingComLib.Messages.Message>(message, settings);
 
             TThingComLib.Messages.Message ret = null;

@@ -19,8 +19,15 @@ using System.Runtime.InteropServices;
 using Microsoft.MixedReality.Toolkit.Examples.Demos.EyeTracking.Logging;
 using T1;
 
+
 namespace T1
 {
+    //*************************************************************************
+    //* This class references C++ code defined in NativeFunctions.cpp. This 
+    //* provides a convenient place to set breakpoints in the code generated
+    //* by IL2CPP.
+    //*************************************************************************
+
     public class CLogger
     {
 #if UNITY_EDITOR
