@@ -114,6 +114,10 @@ public class ThingPose
         }
     }
 
+    private double _declination = 15.5;
+    bool _gotOrientTrue = false;
+    bool _gotOrientMag = false;
+
     //*************************************************************************
     /// <summary>
     /// 
@@ -149,8 +153,28 @@ public class ThingPose
 
         if (null != message.Orient)
         {
-            _orient.Magnetic = message.Orient.Mag;
             _orient.True = message.Orient.True;
+            _orient.Magnetic = message.Orient.Mag;
+
+            if (_orient.True != 0)
+                _gotOrientTrue = true;
+
+            if (_orient.Magnetic != 0)
+                _gotOrientMag = true;
+
+            if(_gotOrientTrue |  !_gotOrientMag)
+            {
+                _orient.Magnetic = (_orient.True + _declination) % 360;
+            }
+            else
+            {
+                if(_gotOrientMag)
+                {
+                    _orient.True = _orient.Magnetic - _declination;
+                    if (_orient.True < 0)
+                        _orient.True += 360;
+                }
+            }
 
             _orient.Quat = new System.Numerics.Quaternion(
                 Convert.ToSingle(message.Orient.X),
