@@ -180,6 +180,8 @@ public class ThingMotion
     //*************************************************************************
     private void ReceiveData()
     {
+        T1.CLogger.LogThis("ReceiveData() : called");
+
         var groupEp = new IPEndPoint(IPAddress.Any, _port);
         //_client = new UdpClient(_port);
         _client = new UdpClient {ExclusiveAddressUse = false, EnableBroadcast = true};
@@ -205,9 +207,11 @@ public class ThingMotion
         {
             try
             {
+                T1.CLogger.LogThis("ReceiveData() : wait");
+
                 var data = _client.Receive(ref anyIp);
 
-                //T1.CLogger.LogThis("ReceiveData() : received data");
+                T1.CLogger.LogThis("ReceiveData() : received data");
 
                 switch (_mode)
                 {
@@ -225,6 +229,7 @@ public class ThingMotion
             }
             catch (Exception err)
             {
+                T1.CLogger.LogThis("ReceiveData() : exception");
                 print(err.ToString());
             }
         }

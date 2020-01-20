@@ -630,6 +630,7 @@ PlayerSettings:
       CodeGeneration: False
       Contacts: False
       EnterpriseAuthentication: False
+      GazeInput: False
       HumanInterfaceDevice: False
       InputInjectionBrokered: False
       InternetClient: True
@@ -660,7 +661,7 @@ PlayerSettings:
       WebCam: False
   metroTargetDeviceFamilies:
     Desktop: False
-    Holographic: False
+    Holographic: True
     IoT: False
     IoTHeadless: False
     Mobile: False
