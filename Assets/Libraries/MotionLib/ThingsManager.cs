@@ -192,7 +192,9 @@ namespace T1
         //filter out noise, only adjust when necessary
 
         //set the rotation of the play space to true compass
-        MixedRealityPlayspace.Rotation = Quaternion.Euler(Vector3.up * (float)pose.Orient.True);
+        
+        //temporary disable, need to reenable with more context
+        //MixedRealityPlayspace.Rotation = Quaternion.Euler(Vector3.up * (float)pose.Orient.True);
     }
 
     //*************************************************************************
