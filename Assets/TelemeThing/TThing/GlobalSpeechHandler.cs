@@ -27,7 +27,7 @@ public class DroneMenuHandler : MonoBehaviour
     { }
 
 
-    public static List<GameObject> FindObjectsInScene(string objectName)
+    /*public static List<GameObject> FindObjectsInScene(string objectName)
     {
         UnityEngine.SceneManagement.Scene activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
 
@@ -59,7 +59,7 @@ public class DroneMenuHandler : MonoBehaviour
             }
         }
         return objectsInScene;
-    }
+    }*/
 
     //*************************************************************************
     /// <summary>
@@ -69,7 +69,7 @@ public class DroneMenuHandler : MonoBehaviour
     //*************************************************************************
     public static void ShowMenu(bool trueToShow)
     {
-        var dml = FindObjectsInScene("DroneMenu");
+        var dml = Utils.FindObjectsInScene("DroneMenu");
 
         if (dml.Count == 0)
             return;

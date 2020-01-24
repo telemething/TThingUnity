@@ -18,6 +18,8 @@ using NetStandardClassLibraryT1;
 using System.Runtime.InteropServices;
 using Microsoft.MixedReality.Toolkit.Examples.Demos.EyeTracking.Logging;
 using T1;
+using System.Diagnostics;
+using System.Threading;
 
 
 namespace T1
@@ -66,6 +68,7 @@ namespace T1
     public string MyThingId = "self";
     private PointLatLonAlt _origin = null;
     private static Thing _self = null;
+    private UnityEngine.UI.Text _infoTextLarge = null;
 
     private static double _maxMaxThingDistance = 50.0;
     private static double _minMinThingDistance = 0.3;
@@ -104,17 +107,17 @@ namespace T1
     private void LogThis(Exception ex, string prefix, bool showOnConsole)
     {
         if (showOnConsole)
-            Debug.Log(ex.Message);
+            UnityEngine.Debug.Log(ex.Message);
 
-        Debug.unityLogger.LogException(ex, this);
+        UnityEngine.Debug.unityLogger.LogException(ex, this);
     }
 
     private void LogThis(string message, bool showOnConsole)
     {
         if (showOnConsole)
-            Debug.Log(message);
+            UnityEngine.Debug.Log(message);
 
-        Debug.unityLogger.logHandler.LogFormat(LogType.Exception, this, message);
+        UnityEngine.Debug.unityLogger.logHandler.LogFormat(LogType.Exception, this, message);
     }
 
     //*************************************************************************
@@ -128,14 +131,13 @@ namespace T1
         _TM = ThingMotion.GetPoseObject(Port);
         _TM.SetThing(MyThingId, Thing.TypeEnum.Person, Thing.SelfEnum.Self, Thing.RoleEnum.Observer);
 
-        //var t1 = new T1.T2();
-        //var lis = T1.T2.CountLettersInString("1234");
-
         T1.CLogger.LogThis("ThingsManager.Start()");
 
-        MyUtilities utils = new MyUtilities();
-        utils.AddValues(2, 3);
-        print("2 + 3 = " + utils.c);
+        _infoTextLarge = Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("InfoTextLarge");
+
+        //MyUtilities utils = new MyUtilities();
+        //utils.AddValues(2, 3);
+        //print("2 + 3 = " + utils.c);
     }
 
     //*************************************************************************
@@ -176,6 +178,16 @@ namespace T1
         _TM.Origin = _origin;
     }
 
+    public enum CompassAlignmentStatusEnum { Unaligned, Aligning, Showing, Aligned, Broken }
+    CompassAlignmentStatusEnum _compassAlignmentStatus = CompassAlignmentStatusEnum.Unaligned;
+    Stopwatch _compassAlignementTimer = new Stopwatch();
+    long _compassAlignementTimeSpanMs = 5000;
+    long _compassAlignementShowingTimeSpanMs = 2000;
+    float _compassAlignementCameraStartingRotation = 0;
+    float _compassAlignementCameraMaxAllowedRotation = 2;
+    double _compassAlignementCompassReadingSum = 0;
+    int _compassAlignementCompassReadingCount = 0;
+
     //*************************************************************************
     /// <summary>
     ///We translate objects from real world geo coords to local game coords
@@ -189,12 +201,91 @@ namespace T1
     //*************************************************************************
     void AlignToCompass(ThingPose pose)
     {
+        Quaternion compassOrientation;
+        Quaternion cameraOrientation;
+
+        switch (_compassAlignmentStatus)
+        {
+            case CompassAlignmentStatusEnum.Aligned:
+                //TODO * Check if we have drifted out of alignment
+                return;
+
+            case CompassAlignmentStatusEnum.Showing:
+
+                if (_compassAlignementShowingTimeSpanMs < _compassAlignementTimer.ElapsedMilliseconds)
+                {
+                    _infoTextLarge.text = "";
+                    _compassAlignmentStatus = CompassAlignmentStatusEnum.Aligned;
+                    _compassAlignementTimer.Stop();
+                }
+
+                return;
+
+            case CompassAlignmentStatusEnum.Unaligned:
+
+                _infoTextLarge.text = "Aligning Orientation. Hold Still";
+                _compassAlignmentStatus = CompassAlignmentStatusEnum.Aligning;
+                _compassAlignementCameraStartingRotation = Camera.main.transform.rotation.eulerAngles.y;
+                _compassAlignementTimer.Restart();
+                return;
+
+            case CompassAlignmentStatusEnum.Aligning:
+
+                compassOrientation = Quaternion.Euler(Vector3.up * (float)pose.Orient.True);
+                cameraOrientation = Camera.main.transform.rotation;
+
+                //if not enough still time has passed, add readings, show progress
+                if (_compassAlignementTimeSpanMs > _compassAlignementTimer.ElapsedMilliseconds)
+                {
+                    _infoTextLarge.text = $"Aligning Orientation. Hold Still\nMag: {Math.Round(pose.Orient.True, 2)}\nCam: {Math.Round(cameraOrientation.eulerAngles.y, 2)}";
+
+                    //if not still, start over
+                    if(_compassAlignementCameraMaxAllowedRotation < Math.Abs(cameraOrientation.eulerAngles.y - _compassAlignementCameraStartingRotation))
+                    {
+                        _compassAlignementCompassReadingSum = 0;
+                        _compassAlignementCompassReadingCount = 0;
+                        _compassAlignementCameraStartingRotation = Camera.main.transform.rotation.eulerAngles.y;
+                        _compassAlignementTimer.Restart();
+                        return;
+                    }
+
+                    _compassAlignementCompassReadingSum += pose.Orient.True;
+                    _compassAlignementCompassReadingCount++;
+                    return;
+                }
+
+                //Enough still time has passed
+
+                //find average of mag readings taken during cal time
+                var MagAngleAvg = (float)(_compassAlignementCompassReadingSum / (float)_compassAlignementCompassReadingCount);
+
+                //convert to quat
+                compassOrientation = Quaternion.Euler(Vector3.up * MagAngleAvg);
+
+                //find diff between compass and camera rotation
+                var DiffRotation = compassOrientation * Quaternion.Inverse(cameraOrientation);
+
+                //rotate playspace by diff angle
+                MixedRealityPlayspace.Rotation = DiffRotation;
+
+                _infoTextLarge.text = $"Aligned : {Math.Round(MagAngleAvg, 2)} deg.";
+
+                _compassAlignmentStatus = CompassAlignmentStatusEnum.Showing;
+                _compassAlignementTimer.Restart();
+
+                return;
+
+            case CompassAlignmentStatusEnum.Broken:
+                return;
+        }
+
+
         //filter out noise, only adjust when necessary
 
         //set the rotation of the play space to true compass
-        
+
         //temporary disable, need to reenable with more context
-        //MixedRealityPlayspace.Rotation = Quaternion.Euler(Vector3.up * (float)pose.Orient.True);
+        MixedRealityPlayspace.Rotation = Quaternion.Euler(Vector3.up * (float)pose.Orient.True);
     }
 
     //*************************************************************************
@@ -583,7 +674,7 @@ public class ThingGameObject
 
     private void AddOnClick()
     {
-        _interactableObject.OnClick.AddListener(() => Debug.Log("Interactable clicked"));
+        _interactableObject.OnClick.AddListener(() => UnityEngine.Debug.Log("Interactable clicked"));
     }
 
     private void AddFocusEvents()
@@ -591,9 +682,9 @@ public class ThingGameObject
         var onFocusReceiver = _interactableObject.AddReceiver<InteractableOnFocusReceiver>();
 
         onFocusReceiver.OnFocusOn.AddListener(
-            () => Debug.Log("Focus on"));
+            () => UnityEngine.Debug.Log("Focus on"));
         onFocusReceiver.OnFocusOff.AddListener(
-            () => Debug.Log("Focus off"));
+            () => UnityEngine.Debug.Log("Focus off"));
     }
 
     private void AddToggleEvents()
@@ -606,8 +697,8 @@ public class ThingGameObject
         _interactableObject.CanSelect = true;
         _interactableObject.CanDeselect = true;
 
-        toggleReceiver.OnSelect.AddListener(() => Debug.Log("Toggle selected"));
-        toggleReceiver.OnDeselect.AddListener(() => Debug.Log("Toggle un-selected"));
+        toggleReceiver.OnSelect.AddListener(() => UnityEngine.Debug.Log("Toggle selected"));
+        toggleReceiver.OnDeselect.AddListener(() => UnityEngine.Debug.Log("Toggle un-selected"));
     }
 
     //*************************************************************************
