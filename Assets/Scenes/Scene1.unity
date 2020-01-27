@@ -915,7 +915,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -60.3, y: -26.1}
+  m_AnchoredPosition: {x: -60.3, y: -27.9}
   m_SizeDelta: {x: 600, y: 100}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &492939960
@@ -996,7 +996,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &521975414
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1386,7 +1386,6 @@ GameObject:
   - component: {fileID: 853113716}
   - component: {fileID: 853113719}
   - component: {fileID: 853113718}
-  - component: {fileID: 853113717}
   m_Layer: 0
   m_Name: InfoTextLarge
   m_TagString: Untagged
@@ -1410,30 +1409,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -60.300003, y: 4.3}
-  m_SizeDelta: {x: 300, y: 50}
+  m_AnchoredPosition: {x: -60.300003, y: -7.2}
+  m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &853113717
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 853113715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c0d2f350b860874a804483625dba3ed, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Port: 45679
-  TextObject: {fileID: 853113718}
-  ThingId: self
-  RotR: 0
-  RotP: 0
-  RotY: 0
-  PosX: 0
-  PosY: 0
-  PosZ: 0
 --- !u!114 &853113718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1454,7 +1432,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 24
+    m_FontSize: 20
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 2

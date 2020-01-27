@@ -18,7 +18,8 @@ using System.Runtime.InteropServices;
 
 namespace Esri.PrototypeLab.HoloLens.Unity {
     internal class LercDecoder {
-        private const string DLL = "Lerc32";
+        //private const string DLL = "Lerc32";      //*** change
+        private const string DLL = "__Internal";
         public enum DataType { dt_char, dt_uchar, dt_short, dt_ushort, dt_int, dt_uint, dt_float, dt_double }
         [DllImport(DLL)]
         public static extern uint lerc_getBlobInfo(byte[] pLercBlob, uint blobSize, uint[] infoArray, double[] dataRangeArray, int infoArraySize, int dataRangeArraySize);
