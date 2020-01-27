@@ -131,7 +131,7 @@ extern "C" {
   // If in doubt, check the code in Lerc::GetLercInfo(...) for the exact logic. 
 
   LERCDLL_API
-  lerc_status lerc_getBlobInfo(
+  lerc_status  __stdcall lerc_getBlobInfo(
     const unsigned char* pLercBlob,    // Lerc blob to decode
     unsigned int blobSize,             // blob size in bytes
     unsigned int* infoArray,           // info array with all info needed to allocate the outgoing array for calling decode
@@ -145,7 +145,7 @@ extern "C" {
   //! The valid pixels array, if not 0, must have been allocated to size (nCols * nRows). 
 
   LERCDLL_API
-  lerc_status lerc_decode(
+  lerc_status  __stdcall lerc_decode(
     const unsigned char* pLercBlob,    // Lerc blob to decode
     unsigned int blobSize,             // blob size in bytes
     unsigned char* pValidBytes,        // gets filled if not null ptr, even if all valid

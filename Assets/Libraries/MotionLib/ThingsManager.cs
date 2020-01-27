@@ -138,6 +138,8 @@ namespace T1
         //MyUtilities utils = new MyUtilities();
         //utils.AddValues(2, 3);
         //print("2 + 3 = " + utils.c);
+
+        TestLerc();
     }
 
     //*************************************************************************
@@ -164,6 +166,147 @@ namespace T1
         //T1.CLogger.LogThis("ThingsManager.Update()");
 
         things?.ForEach(thing => {if(thing.Self == Thing.SelfEnum.Self) SetSelf(thing); else SetOther(thing); });
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <returns></returns>
+    //*********************************************************************
+    static byte[] GetData(string fileName)
+    {
+        try
+        {
+            System.IO.FileStream fs = System.IO.File.Open(fileName, System.IO.FileMode.Open);
+
+            long fileSize = fs.Length;
+            byte[] fileData = new byte[fileSize];
+            fs.Read(fileData, 0, (int)fileSize);
+
+            return fileData;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("GetData() : " + ex.Message);
+        }
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="encodedData"></param>
+    /// <returns></returns>
+    //*********************************************************************
+    static object[] Decode(byte[] encodedData)
+    {
+        try
+        {
+            //LercLibNet.Lerc c1 = new LercLibNet.Lerc();
+
+            var encodedDataSize = encodedData.Length;
+            int infoArraySize = 10;
+            uint[] infoArray = new uint[infoArraySize];
+            int dataRangeArraySize = 10;
+            double[] dataRangeArray = new double[dataRangeArraySize];
+
+            //c1.GetBlobInfo(encodedData, (uint)encodedDataSize, infoArray,
+            //    dataRangeArray, infoArraySize, dataRangeArraySize);
+            
+            Esri.PrototypeLab.HoloLens.Unity.LercDecoder.lerc_getBlobInfo(
+                encodedData, (uint)encodedDataSize, infoArray,
+                dataRangeArray, infoArraySize, dataRangeArraySize);
+
+            uint version = infoArray[0];
+            uint dataType = infoArray[1];
+            uint nDim = infoArray[2];
+            uint nCols = infoArray[3];
+            uint nRows = infoArray[4];
+            uint nBands = infoArray[5];
+            uint nValidPixels = infoArray[6];
+            uint blobSize = infoArray[7];
+
+            var validBytesMask = new byte[nCols * nRows];
+            object[] decodedData = null;
+
+            switch (dataType)
+            {
+                case 0:
+                    //char
+                    throw new Exception("Data type 'char' not implemented");
+                    break;
+                case 1:
+                    //uchar
+                    throw new Exception("Data type 'uchar' not implemented");
+                    break;
+                case 2:
+                    //short
+                    throw new Exception("Data type 'short' not implemented");
+                    break;
+                case 3:
+                    //ushort
+                    throw new Exception("Data type 'ushort' not implemented");
+                    break;
+                case 4:
+                    //int
+                    throw new Exception("Data type 'int' not implemented");
+                    break;
+                case 5:
+                    //uint
+                    throw new Exception("Data type 'uint' not implemented");
+                    break;
+                case 6:
+                    //float
+                    var decodedDataF = new float[nCols * nRows];
+                    //c1.Decode(encodedData, (uint)encodedDataSize, validBytesMask,
+                    //    (int)nDim, (int)nCols, (int)nRows, (int)nBands, dataType, decodedDataF);
+                    Esri.PrototypeLab.HoloLens.Unity.LercDecoder.lerc_decode(encodedData, (uint)encodedDataSize, validBytesMask,
+                        (int)nDim, (int)nCols, (int)nRows, (int)nBands, (int)dataType, decodedDataF);
+                    decodedData = Array.ConvertAll(decodedDataF, x => (object)x);
+                    break;
+                case 7:
+                    //double
+                    throw new Exception("Data type 'double' not implemented");
+                    break;
+            }
+
+            return decodedData;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Decode() : " + ex.Message);
+        }
+    }
+
+
+    void TestLerc()
+    {
+        try
+        {
+            string fileName = Application.dataPath + "\\742";
+            var decoded = Decode(GetData(fileName));
+
+            if (null == decoded)
+            {
+                Console.WriteLine("Decoded data is NULL");
+                return;
+            }
+
+            if (0 == decoded.Length)
+            {
+                Console.WriteLine("Decoded data length == 0");
+                return;
+            }
+
+            Console.WriteLine("Decoded data: type: {0}, length: {1}",
+                decoded[0].GetType().ToString(), decoded.Length);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Exception: " + ex.Message);
+        }
     }
 
     //*************************************************************************

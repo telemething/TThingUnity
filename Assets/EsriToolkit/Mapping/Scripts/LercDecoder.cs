@@ -23,7 +23,7 @@ namespace Esri.PrototypeLab.HoloLens.Unity {
         public enum DataType { dt_char, dt_uchar, dt_short, dt_ushort, dt_int, dt_uint, dt_float, dt_double }
         [DllImport(DLL)]
         public static extern uint lerc_getBlobInfo(byte[] pLercBlob, uint blobSize, uint[] infoArray, double[] dataRangeArray, int infoArraySize, int dataRangeArraySize);
-        [DllImport(DLL)]
+        /*[DllImport(DLL)]
         public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, sbyte[] pData);
         [DllImport(DLL)]
         public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, byte[] pData);
@@ -34,12 +34,12 @@ namespace Esri.PrototypeLab.HoloLens.Unity {
         [DllImport(DLL)]
         public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, int[] pData);
         [DllImport(DLL)]
-        public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, uint[] pData);
+        public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, uint[] pData);*/
         [DllImport(DLL)]
         public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nDim, int nCols, int nRows, int nBands, int dataType, float[] pData);
-        [DllImport(DLL)]
+        /*[DllImport(DLL)]
         public static extern uint lerc_decode(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, int dataType, double[] pData);
         [DllImport(DLL)]
-        public static extern uint lerc_decodeToDouble(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, double[] pData);
+        public static extern uint lerc_decodeToDouble(byte[] pLercBlob, uint blobSize, byte[] pValidBytes, int nCols, int nRows, int nBands, double[] pData);*/
     }
 }

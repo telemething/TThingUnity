@@ -111,7 +111,7 @@ lerc_status lerc_encodeForVersion(const void* pData, int version, unsigned int d
 
 // -------------------------------------------------------------------------- ;
 
-lerc_status lerc_getBlobInfo(const unsigned char* pLercBlob, unsigned int blobSize, 
+lerc_status  __stdcall lerc_getBlobInfo(const unsigned char* pLercBlob, unsigned int blobSize, 
   unsigned int* infoArray, double* dataRangeArray, int infoArraySize, int dataRangeArraySize)
 {
   /*if (!pLercBlob || !blobSize || (!infoArray && !dataRangeArray) || ((infoArraySize <= 0) && (dataRangeArraySize <= 0)))
@@ -169,7 +169,7 @@ lerc_status lerc_getBlobInfo(const unsigned char* pLercBlob, unsigned int blobSi
 
 // -------------------------------------------------------------------------- ;
 
-lerc_status lerc_decode(const unsigned char* pLercBlob, unsigned int blobSize,
+lerc_status  __stdcall lerc_decode(const unsigned char* pLercBlob, unsigned int blobSize,
   unsigned char* pValidBytes, int nDim, int nCols, int nRows, int nBands, unsigned int dataType, void* pData)
 {
   /*if (!pLercBlob || !blobSize || !pData || dataType >= Lerc::DT_Undefined || nDim <= 0 || nCols <= 0 || nRows <= 0 || nBands <= 0)
