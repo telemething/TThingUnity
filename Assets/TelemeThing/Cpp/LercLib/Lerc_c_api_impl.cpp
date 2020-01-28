@@ -20,9 +20,7 @@ http://github.com/Esri/lerc/
 
 Contributors:  Thomas Maurer
 */
-/*#include "../pch.h"
-
-#include "Defines.h"
+/*#include "Defines.h"
 #include "Lerc_c_api.h"
 #include "Lerc_types.h"
 #include "Lerc.h"*/
