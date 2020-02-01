@@ -188,7 +188,10 @@ public class MapTile : DynamicTextureDownloader
         {
             var threeDScale = TileData.ScaleFactor;
 
-            if(0 == elevationData.resourceSets.Count)
+            //temp
+            threeDScale = 300;
+
+            if (0 == elevationData.resourceSets.Count)
             {
                 return;
             }
