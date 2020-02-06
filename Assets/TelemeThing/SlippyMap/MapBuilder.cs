@@ -41,7 +41,7 @@ public class MapBuildery : MonoBehaviour
             for (var y = -size; y <= size; y++)
             {
                 var tile = GetOrCreateTile(x, y, tileIndex++);
-                tile.SetTileData(new TileInfo(_centerTile.X - x, _centerTile.Y + y, ZoomLevel, MapTileSize),
+                tile.SetTileData(new TileInfo(_centerTile.X - x, _centerTile.Y + y, ZoomLevel, MapTileSize, _centerTile.CenterLocation),
                     forceReload);
                 tile.gameObject.name = string.Format("({0},{1}) - {2},{3}", x, y, tile.TileData.X,
                     tile.TileData.Y);

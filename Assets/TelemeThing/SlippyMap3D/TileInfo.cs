@@ -7,10 +7,12 @@ public class TileInfo : IEquatable<TileInfo>
 
     private const int MapPixelSize = 256;
 
+    public WorldCoordinate CenterLocation { get; private set; }
 
     public TileInfo(WorldCoordinate centerLocation, int zoom, float mapTileSize)
     {
         SetStandardValues(mapTileSize);
+        CenterLocation = new WorldCoordinate( centerLocation );
 
         //http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Tile_numbers_to_lon..2Flat._2
         var latrad = centerLocation.Lat * Mathf.Deg2Rad;
@@ -20,12 +22,13 @@ public class TileInfo : IEquatable<TileInfo>
         ZoomLevel = zoom;
     }
 
-    public TileInfo(int x, int y, int zoom, float mapTileSize)
+    public TileInfo(int x, int y, int zoom, float mapTileSize, WorldCoordinate centerTileCenterLocation)
     {
         SetStandardValues(mapTileSize);
         X = x;
         Y = y;
         ZoomLevel = zoom;
+        CenterLocation = centerTileCenterLocation;
     }
 
     private void SetStandardValues(float mapTileSize)
@@ -74,12 +77,27 @@ public class TileInfo : IEquatable<TileInfo>
     {
         156412f, 78206f, 39103f, 19551f, 9776f, 4888f, 2444f,
         1222f, 610.984f, 305.492f, 152.746f, 76.373f, 38.187f,
-        19.093f, 9.547f, 4.773f, 2.387f, 1.193f, 0.596f, 0.298f
+        19.093f, 9.547f, 4.773f, 2.387f, 1.193f, 0.596f, 0.298f, 0.149f
     };
 
-    public float ScaleFactor
+    public double MetersPerPixel
     {
-        get { return _zoomScales[ZoomLevel] * MapPixelSize; }
+        get { return (156543.03 * Math.Cos(CenterLocation.Lat * Mathf.Deg2Rad)) / Math.Pow(2.0, ZoomLevel); }
+    }
+
+    public double ScaleFactor
+    {
+        get { return MetersPerPixel * MapPixelSize; }
+    }
+
+    public float ScaleFactorold
+    {
+        get 
+        {
+            var v1 = ScaleFactor;
+            var v2 = _zoomScales[ZoomLevel] * MapPixelSize;
+            return _zoomScales[ZoomLevel] * MapPixelSize;
+        }
     }
 
     public WorldCoordinate GetNorthEast()

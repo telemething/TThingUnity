@@ -41,7 +41,7 @@ public class MapBuilder : MonoBehaviour
             for (var y = -size; y <= size; y++)
             {
                 var tile = GetOrCreateTile(x, y, tileIndex++);
-                tile.SetTileData(new TileInfo(_centerTile.X - x, _centerTile.Y + y, ZoomLevel, MapTileSize),
+                tile.SetTileData(new TileInfo(_centerTile.X - x, _centerTile.Y + y, ZoomLevel, MapTileSize, _centerTile.CenterLocation),
                     forceReload);
                 tile.gameObject.name = string.Format("({0},{1}) - {2},{3}", x, y, tile.TileData.X,
                     tile.TileData.Y);
@@ -60,6 +60,10 @@ public class MapBuilder : MonoBehaviour
         }
 
         var mapTile = Instantiate(MapTilePrefab, transform);
+
+        var ff = mapTile.transform.localScale;
+        var oo = MapTilePrefab.transform.localScale;
+
         mapTile.transform.localPosition = new Vector3(MapTileSize * x - MapTileSize / 2, 0, MapTileSize * y + MapTileSize / 2);
         mapTile.transform.localRotation = Quaternion.identity;
         var tile = mapTile.GetComponent<MapTile>();

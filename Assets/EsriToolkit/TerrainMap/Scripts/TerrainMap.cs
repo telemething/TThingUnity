@@ -509,7 +509,9 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
             yield return null;
 
             MeshRenderer meshRenderer = side.AddComponent<MeshRenderer>();
-            meshRenderer.material = new Material(Shader.Find("Standard")) {
+            //meshRenderer.material = new Material(Shader.Find("Standard")) //*** changed
+            meshRenderer.material = new Material(Shader.Find("Mixed Reality Toolkit/Standard")) 
+            {
                 color = new Color32(0, 128, 128, 100)
             };
             yield return null;
@@ -553,7 +555,9 @@ namespace Esri.PrototypeLab.HoloLens.Demo {
                 //line.tag = "Address";
 
                 LineRenderer lineRenderer = line.AddComponent<LineRenderer>();
-                lineRenderer.material = new Material(Shader.Find("Standard")) {
+                //lineRenderer.material = new Material(Shader.Find("Standard")) //*** changed
+                lineRenderer.material = new Material(Shader.Find("Mixed Reality Toolkit/Standard"))
+                {
                     color = Color.white
                 };
                 lineRenderer.SetWidth(0.002f, 0.002f);

@@ -148,6 +148,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
+  - {fileID: 416328581}
   - {fileID: 1512015494}
   m_Father: {fileID: 0}
   m_RootOrder: 2
@@ -181,13 +182,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6efa5fa63803e64d881558a909697db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ZoomLevel: 12
+  ZoomLevel: 14
   MapTileSize: 0.5
-  Latitude: 46.78403
-  Longitude: -121.7543
+  Latitude: 47.468338
+  Longitude: -121.767876
   MapTilePrefab: {fileID: 7597134673337203853, guid: 5bb3b02a67cade14b8e1a0e9d2d23017,
     type: 3}
-  MapSize: 14
+  MapSize: 8
 --- !u!4 &416328581
 Transform:
   m_ObjectHideFlags: 0
@@ -195,13 +196,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 416328579}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -1.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
+  m_LocalScale: {x: 10, y: 10, z: 10}
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 398457861}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!1 &1477227881
 GameObject:
   m_ObjectHideFlags: 0
@@ -378,7 +379,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 398457861}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1512015495
 MonoBehaviour:
