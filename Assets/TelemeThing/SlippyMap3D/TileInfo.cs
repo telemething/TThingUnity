@@ -80,6 +80,16 @@ public class TileInfo : IEquatable<TileInfo>
         19.093f, 9.547f, 4.773f, 2.387f, 1.193f, 0.596f, 0.298f, 0.149f
     };
 
+    public static double PixelSizeMeters(float latitudeDegrees, int zoomLevel)
+    {
+        return (156543.03 * Math.Cos(latitudeDegrees * Mathf.Deg2Rad)) / Math.Pow(2.0, zoomLevel); 
+    }
+
+    public static double TileSizeMeters(float latitudeDegrees, int zoomLevel, int pixelsPerTile)
+    {
+        return PixelSizeMeters(latitudeDegrees, zoomLevel) * pixelsPerTile;
+    }
+
     public double MetersPerPixel
     {
         get { return (156543.03 * Math.Cos(CenterLocation.Lat * Mathf.Deg2Rad)) / Math.Pow(2.0, ZoomLevel); }

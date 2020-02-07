@@ -26,9 +26,13 @@ public class MapBuilder : MonoBehaviour
 
     public void ShowMap()
     {
+        if(0 == MapTileSize)
+            MapTileSize = (float)TileInfo.TileSizeMeters(Latitude, ZoomLevel, 256);
+
         _centerTile = new TileInfo(new WorldCoordinate { Lat = Latitude, Lon = Longitude }, 
             ZoomLevel, MapTileSize);
         LoadTiles();
+        Camera.main.farClipPlane = 10000;
     }
 
     private void LoadTiles(bool forceReload = false)
@@ -61,8 +65,12 @@ public class MapBuilder : MonoBehaviour
 
         var mapTile = Instantiate(MapTilePrefab, transform);
 
-        var ff = mapTile.transform.localScale;
         var oo = MapTilePrefab.transform.localScale;
+        var ff = mapTile.transform.localScale;
+
+        //mapTile.transform.localScale = new Vector3(MapTileSize / 10.0f, 20 * MapTileSize / 10.0f, MapTileSize / 10.0f);
+        //mapTile.transform.localScale = new Vector3(MapTileSize / 10.0f, MapTileSize / 10.0f, MapTileSize / 10.0f);
+        mapTile.transform.localScale = new Vector3(MapTileSize / 10.0f, 1, MapTileSize / 10.0f);
 
         mapTile.transform.localPosition = new Vector3(MapTileSize * x - MapTileSize / 2, 0, MapTileSize * y + MapTileSize / 2);
         mapTile.transform.localRotation = Quaternion.identity;

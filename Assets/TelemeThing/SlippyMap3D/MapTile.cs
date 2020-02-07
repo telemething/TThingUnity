@@ -191,7 +191,7 @@ public class MapTile : DynamicTextureDownloader
             //temp
             //threeDScale = 300;
 
-            //threeDScale /= 25;
+            threeDScale /= 20;
 
             if (0 == elevationData.resourceSets.Count)
             {
@@ -204,7 +204,8 @@ public class MapTile : DynamicTextureDownloader
             for (var i = 0; i < mesh.vertexCount; i++)
             {
                 var newPos = mesh.vertices[i];
-                newPos.y = resource.elevations[i] / (float)threeDScale;
+                //newPos.y = resource.elevations[i] / (float)threeDScale;
+                newPos.y = resource.elevations[i];
                 verts.Add(newPos);
             }
             RebuildMesh(mesh, verts);
