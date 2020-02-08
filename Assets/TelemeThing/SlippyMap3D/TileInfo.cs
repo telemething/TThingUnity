@@ -5,7 +5,7 @@ public class TileInfo : IEquatable<TileInfo>
 {
     public float MapTileSize { get; private set; }
 
-    private const int MapPixelSize = 256;
+    public int MapPixelSize = 256;
 
     public WorldCoordinate CenterLocation { get; private set; }
 

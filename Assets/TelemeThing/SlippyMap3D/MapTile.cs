@@ -14,6 +14,8 @@ public class DynamicTextureDownloader : MonoBehaviour
 {
     public string ImageUrl;
     public bool ResizePlane;
+    public bool _useCache = false;
+    protected TileInfo _tileData;
 
     private WWW _imageLoader = null;
     private string _previousImageUrl = null;
@@ -45,7 +47,28 @@ public class DynamicTextureDownloader : MonoBehaviour
         {
             _previousImageUrl = ImageUrl;
 
-            OnStartLoad();
+            if(_useCache & TileCache.DoesExist(_tileData.ZoomLevel, _tileData.X, _tileData.Y, 
+                TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, "png") )
+            {
+                var rawData = TileCache.Fetch(_tileData.ZoomLevel, _tileData.X, _tileData.Y,
+                TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, "png");
+
+                var tex = new Texture2D(_tileData.MapPixelSize, _tileData.MapPixelSize);
+                tex.LoadRawTextureData(rawData);
+                GetComponent<Renderer>().material.mainTexture = tex;
+
+                //Destroy(_imageLoader.texture);
+                //_imageLoader = null;
+
+                _appliedToTexture = true;
+
+                if (ResizePlane)
+                {
+                    DoResizePlane();
+                }
+            }
+            else
+                OnStartLoad();
         }
 
         if (_imageLoader != null && _imageLoader.isDone && !_appliedToTexture)
@@ -55,6 +78,12 @@ public class DynamicTextureDownloader : MonoBehaviour
 
             //Destroy(GetComponent<Renderer>().material.mainTexture);
             GetComponent<Renderer>().material.mainTexture = _imageLoader.texture;
+
+            if(_useCache)
+                TileCache.Store(_imageLoader.texture.GetRawTextureData(), _tileData.ZoomLevel, 
+                    _tileData.X, _tileData.Y, TileCache.DataTypeEnum.StreetMap, 
+                    TileCache.DataProviderEnum.OSM, "png");
+
             Destroy(_imageLoader.texture);
             _imageLoader = null;
 
@@ -62,6 +91,8 @@ public class DynamicTextureDownloader : MonoBehaviour
             {
                 DoResizePlane();
             }
+
+
             OnEndLoad();
         }
     }
@@ -105,7 +136,7 @@ public class MapTile : DynamicTextureDownloader
 {
     public IMapUrlBuilder MapBuilder { get; set; }
 
-    private TileInfo _tileData;
+    //private TileInfo _tileData;
 
     public MapTile()
     {
