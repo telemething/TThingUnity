@@ -51,7 +51,7 @@ public class MapBuilder : MonoBehaviour
                     tile.TileData.Y);
 
                 // temporary
-                System.Threading.Thread.Sleep(200);
+                //System.Threading.Thread.Sleep(200);
             }
         }
     }

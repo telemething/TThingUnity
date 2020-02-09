@@ -15,7 +15,7 @@ public class TileCache : MonoBehaviour
     }
 
     public enum DataTypeEnum { None, StreetMap, Topo, Elevation }
-    public enum DataProviderEnum { None, OSM }
+    public enum DataProviderEnum { None, OSM, VirtualEarth }
 
     //*********************************************************************
     /// <summary>
@@ -73,10 +73,30 @@ public class TileCache : MonoBehaviour
     /// <param name="dataProvider"></param>
     /// <param name="fileExt"></param>
     //*********************************************************************
-    public static void Store(byte[] data, int zoomLevel, int x, int y, 
+    public static void Store(byte[] data, int zoomLevel, int x, int y,
         DataTypeEnum dataType, DataProviderEnum dataProvider, string fileExt)
     {
-        WriteFileData(GetFileName(zoomLevel, x, y, dataType, dataProvider, fileExt, true), data);
+        WriteFileData(GetFileName(zoomLevel, x, y, dataType, 
+            dataProvider, fileExt, true), data);
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="zoomLevel"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="dataType"></param>
+    /// <param name="dataProvider"></param>
+    /// <param name="fileExt"></param>
+    //*********************************************************************
+    public static void Store(string data, int zoomLevel, int x, int y,
+        DataTypeEnum dataType, DataProviderEnum dataProvider, string fileExt)
+    {
+        WriteFileData(GetFileName(zoomLevel, x, y, dataType, 
+            dataProvider, fileExt, true), data);
     }
 
     //*********************************************************************
@@ -91,10 +111,30 @@ public class TileCache : MonoBehaviour
     /// <param name="fileExt"></param>
     /// <returns></returns>
     //*********************************************************************
-    public static byte[] Fetch(int zoomLevel, int x, int y, 
+    public static byte[] FetchBytes(int zoomLevel, int x, int y,
         DataTypeEnum dataType, DataProviderEnum dataProvider, string fileExt)
     {
-        return GetFileData(GetFileName(zoomLevel, x, y, dataType, dataProvider, fileExt, false));
+        return GetFileData(GetFileName(zoomLevel, x, y, dataType,
+            dataProvider, fileExt, false));
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="zoomLevel"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="dataType"></param>
+    /// <param name="dataProvider"></param>
+    /// <param name="fileExt"></param>
+    /// <returns></returns>
+    //*********************************************************************
+    public static string FetchText(int zoomLevel, int x, int y,
+        DataTypeEnum dataType, DataProviderEnum dataProvider, string fileExt)
+    {
+        return GetFileText(GetFileName(zoomLevel, x, y, dataType,
+            dataProvider, fileExt, false));
     }
 
     //*********************************************************************
@@ -108,7 +148,8 @@ public class TileCache : MonoBehaviour
     {
         try
         {
-            System.IO.FileStream fs = System.IO.File.Open(fileName, System.IO.FileMode.Open);
+            System.IO.FileStream fs = System.IO.File.Open(
+                fileName, System.IO.FileMode.Open);
 
             long fileSize = fs.Length;
             byte[] fileData = new byte[fileSize];
@@ -128,6 +169,28 @@ public class TileCache : MonoBehaviour
     /// 
     /// </summary>
     /// <param name="fileName"></param>
+    /// <returns></returns>
+    //*********************************************************************
+    public static string GetFileText(string fileName)
+    {
+        try
+        {
+            using (var sr = new System.IO.StreamReader(fileName))
+            {
+                return sr.ReadToEnd();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("GetFileText() : " + ex.Message);
+        }
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="fileName"></param>
     /// <param name="data"></param>
     //*********************************************************************
     public static void WriteFileData(string fileName, byte[] data)
@@ -139,6 +202,30 @@ public class TileCache : MonoBehaviour
             fs.Write(data, 0, data.Length);
             fs.Flush();
             fs.Close();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("WriteFileData() : " + ex.Message);
+        }
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <param name="data"></param>
+    //*********************************************************************
+    public static void WriteFileData(string fileName, string data)
+    {
+        try
+        {
+            using (var sw = new System.IO.StreamWriter(fileName))
+            {
+                sw.WriteLine(data);
+                sw.Flush();
+                sw.Close();
+            }
         }
         catch (Exception ex)
         {

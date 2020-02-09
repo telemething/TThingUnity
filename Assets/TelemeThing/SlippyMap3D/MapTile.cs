@@ -66,7 +66,7 @@ public class DynamicTextureDownloader : MonoBehaviour
             if(UseCache & TileCache.DoesExist(_tileData.ZoomLevel, _tileData.X, _tileData.Y, 
                 TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, _pngExtenstion) )
             {
-                var rawData = TileCache.Fetch(_tileData.ZoomLevel, _tileData.X, _tileData.Y,
+                var rawData = TileCache.FetchBytes(_tileData.ZoomLevel, _tileData.X, _tileData.Y,
                 TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, _pngExtenstion);
 
                 var tex = new Texture2D(_tileData.MapPixelSize, _tileData.MapPixelSize);
@@ -162,6 +162,8 @@ public class DynamicTextureDownloader : MonoBehaviour
 public class MapTile : DynamicTextureDownloader
 {
     public IMapUrlBuilder MapBuilder { get; set; }
+    private string _txtExtenstion = "txt";
+    private static object _webReqLock = new object();
 
     //*************************************************************************
     /// <summary>
@@ -185,7 +187,22 @@ public class MapTile : DynamicTextureDownloader
         if (_tileData == null || !_tileData.Equals(tiledata) || forceReload)
         {
             TileData = tiledata;
-            StartLoadElevationDataFromWeb();
+
+            if (UseCache & TileCache.DoesExist(_tileData.ZoomLevel, _tileData.X, _tileData.Y,
+                TileCache.DataTypeEnum.Elevation, TileCache.DataProviderEnum.VirtualEarth, _txtExtenstion))
+            {
+                var textData = TileCache.FetchText(_tileData.ZoomLevel, _tileData.X, _tileData.Y,
+                TileCache.DataTypeEnum.Elevation, TileCache.DataProviderEnum.VirtualEarth, _txtExtenstion);
+
+                IsDownloading = false;
+                var elevationData = JsonUtility.FromJson<ElevationResult>(textData);
+                if (elevationData == null)
+                    return;
+
+                ApplyElevationData(elevationData);
+            }
+            else
+                StartLoadElevationDataFromWeb();
         }
     }
 
@@ -231,8 +248,14 @@ public class MapTile : DynamicTextureDownloader
         // this URL can only be called 5 times per second
         // https://social.msdn.microsoft.com/Forums/en-US/3e8b767d-36ee-44bf-92f1-ccb94e20779c/too-many-requests-error-started-on-21617
 
-        _downloader = UnityEngine.Networking.UnityWebRequest.Get(urlData);
-        _downloader.SendWebRequest();
+        // critical section, force 200ms between web requests
+        lock (_webReqLock)
+        {
+            _downloader = UnityEngine.Networking.UnityWebRequest.Get(urlData);
+            _downloader.SendWebRequest();
+            System.Threading.Thread.Sleep(200);
+        }
+
         IsDownloading = true;
     }
 
@@ -263,10 +286,13 @@ public class MapTile : DynamicTextureDownloader
             IsDownloading = false;
             var elevationData = JsonUtility.FromJson<ElevationResult>(_downloader.downloadHandler.text);
             if (elevationData == null)
-            {
                 return;
-            }
 
+            if (UseCache)
+                TileCache.Store(_downloader.downloadHandler.text, _tileData.ZoomLevel,
+                    _tileData.X, _tileData.Y, TileCache.DataTypeEnum.Elevation,
+                    TileCache.DataProviderEnum.VirtualEarth, _txtExtenstion);
+            
             ApplyElevationData(elevationData);
         }
     }
