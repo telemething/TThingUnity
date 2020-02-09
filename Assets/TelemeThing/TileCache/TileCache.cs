@@ -113,6 +113,7 @@ public class TileCache : MonoBehaviour
             long fileSize = fs.Length;
             byte[] fileData = new byte[fileSize];
             fs.Read(fileData, 0, (int)fileSize);
+            fs.Close();
 
             return fileData;
         }
@@ -136,6 +137,8 @@ public class TileCache : MonoBehaviour
             System.IO.FileStream fs = System.IO.File.Open(
                 fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write);
             fs.Write(data, 0, data.Length);
+            fs.Flush();
+            fs.Close();
         }
         catch (Exception ex)
         {

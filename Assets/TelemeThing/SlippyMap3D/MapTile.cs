@@ -17,7 +17,8 @@ public class DynamicTextureDownloader : MonoBehaviour
     public bool _useCache = false;
     protected TileInfo _tileData;
 
-    private WWW _imageLoader = null;
+    private UnityEngine.Networking.UnityWebRequest _imageLoader = null;
+
     private string _previousImageUrl = null;
     private bool _appliedToTexture = false;
 
@@ -64,7 +65,7 @@ public class DynamicTextureDownloader : MonoBehaviour
 
                 if (ResizePlane)
                 {
-                    DoResizePlane();
+                    DoResizePlane(tex);
                 }
             }
             else
@@ -77,47 +78,58 @@ public class DynamicTextureDownloader : MonoBehaviour
             _appliedToTexture = true;
 
             //Destroy(GetComponent<Renderer>().material.mainTexture);
-            GetComponent<Renderer>().material.mainTexture = _imageLoader.texture;
+            var tex = ((UnityEngine.Networking.DownloadHandlerTexture)_imageLoader.downloadHandler).texture;  
+            GetComponent<Renderer>().material.mainTexture = tex;  
 
-            if(_useCache)
-                TileCache.Store(_imageLoader.texture.GetRawTextureData(), _tileData.ZoomLevel, 
+            //var td1 = _imageLoader.texture.GetRawTextureData();
+
+            if (_useCache)
+                TileCache.Store(tex.GetRawTextureData(), _tileData.ZoomLevel, 
                     _tileData.X, _tileData.Y, TileCache.DataTypeEnum.StreetMap, 
                     TileCache.DataProviderEnum.OSM, "png");
 
-            Destroy(_imageLoader.texture);
-            _imageLoader = null;
+            /*var td2 = TileCache.Fetch(_tileData.ZoomLevel,
+                    _tileData.X, _tileData.Y, TileCache.DataTypeEnum.StreetMap,
+                    TileCache.DataProviderEnum.OSM, "png");
+
+            var tex = new Texture2D(_tileData.MapPixelSize, _tileData.MapPixelSize);
+            tex.LoadRawTextureData(td1);
+            GetComponent<Renderer>().material.mainTexture = tex;*/
 
             if (ResizePlane)
             {
-                DoResizePlane();
+                DoResizePlane(tex);
             }
 
+            //Destroy(tex);
+            //_imageLoader = null;
 
             OnEndLoad();
         }
     }
 
-    private void DoResizePlane()
+    private void DoResizePlane(Texture tex)
     {
         // Keep the longest edge at the same length
-        if (_imageLoader.texture.width < _imageLoader.texture.height)
+        if (tex.width < tex.height)
         {
             transform.localScale = new Vector3(
-                _originalScale.z * _imageLoader.texture.width / _imageLoader.texture.height,
+                _originalScale.z * tex.width / tex.height,
                 _originalScale.y, _originalScale.z);
         }
         else
         {
             transform.localScale = new Vector3(
                 _originalScale.x, _originalScale.y,
-                _originalScale.x * _imageLoader.texture.height / _imageLoader.texture.width);
+                _originalScale.x * tex.height / tex.width);
         }
     }
 
     protected virtual void OnStartLoad()
     {
         _appliedToTexture = false;
-        _imageLoader = new WWW(ImageUrl);
+        _imageLoader = UnityEngine.Networking.UnityWebRequestTexture.GetTexture(ImageUrl); 
+        _imageLoader.SendWebRequest();//T3
     }
 
     protected virtual void OnEndLoad()
@@ -135,8 +147,6 @@ public class DynamicTextureDownloader : MonoBehaviour
 public class MapTile : DynamicTextureDownloader
 {
     public IMapUrlBuilder MapBuilder { get; set; }
-
-    //private TileInfo _tileData;
 
     public MapTile()
     {
@@ -218,10 +228,6 @@ public class MapTile : DynamicTextureDownloader
         try
         {
             var threeDScale = TileData.ScaleFactor;
-
-            //temp
-            //threeDScale = 300;
-
             threeDScale /= 20;
 
             if (0 == elevationData.resourceSets.Count)
@@ -235,7 +241,6 @@ public class MapTile : DynamicTextureDownloader
             for (var i = 0; i < mesh.vertexCount; i++)
             {
                 var newPos = mesh.vertices[i];
-                //newPos.y = resource.elevations[i] / (float)threeDScale;
                 newPos.y = resource.elevations[i];
                 verts.Add(newPos);
             }
