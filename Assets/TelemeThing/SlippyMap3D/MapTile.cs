@@ -14,8 +14,9 @@ public class DynamicTextureDownloader : MonoBehaviour
 {
     public string ImageUrl;
     public bool ResizePlane;
-    public bool _useCache = false;
+    public bool UseCache = true;
     protected TileInfo _tileData;
+    private string _pngExtenstion = "png";
 
     private UnityEngine.Networking.UnityWebRequest _imageLoader = null;
 
@@ -24,38 +25,52 @@ public class DynamicTextureDownloader : MonoBehaviour
 
     private Vector3 _originalScale;
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     void Start()
     {
         _originalScale = transform.localScale;
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     void Update()
     {
         CheckLoadImage();
         OnUpdate();
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
     private void CheckLoadImage()
     {
         // No image requested
         if (string.IsNullOrEmpty(ImageUrl))
-        {
             return;
-        }
 
         // New image set - reset status vars and start loading new image
         if (_previousImageUrl != ImageUrl)
         {
             _previousImageUrl = ImageUrl;
 
-            if(_useCache & TileCache.DoesExist(_tileData.ZoomLevel, _tileData.X, _tileData.Y, 
-                TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, "png") )
+            if(UseCache & TileCache.DoesExist(_tileData.ZoomLevel, _tileData.X, _tileData.Y, 
+                TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, _pngExtenstion) )
             {
                 var rawData = TileCache.Fetch(_tileData.ZoomLevel, _tileData.X, _tileData.Y,
-                TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, "png");
+                TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, _pngExtenstion);
 
                 var tex = new Texture2D(_tileData.MapPixelSize, _tileData.MapPixelSize);
-                tex.LoadRawTextureData(rawData);
+                tex.LoadImage(rawData);
                 GetComponent<Renderer>().material.mainTexture = tex;
 
                 //Destroy(_imageLoader.texture);
@@ -64,9 +79,7 @@ public class DynamicTextureDownloader : MonoBehaviour
                 _appliedToTexture = true;
 
                 if (ResizePlane)
-                {
                     DoResizePlane(tex);
-                }
             }
             else
                 OnStartLoad();
@@ -74,32 +87,19 @@ public class DynamicTextureDownloader : MonoBehaviour
 
         if (_imageLoader != null && _imageLoader.isDone && !_appliedToTexture)
         {
-            // Apparently an image was loading and is now done. Get the texture and apply
             _appliedToTexture = true;
 
             //Destroy(GetComponent<Renderer>().material.mainTexture);
             var tex = ((UnityEngine.Networking.DownloadHandlerTexture)_imageLoader.downloadHandler).texture;  
-            GetComponent<Renderer>().material.mainTexture = tex;  
+            GetComponent<Renderer>().material.mainTexture = tex;
 
-            //var td1 = _imageLoader.texture.GetRawTextureData();
-
-            if (_useCache)
-                TileCache.Store(tex.GetRawTextureData(), _tileData.ZoomLevel, 
-                    _tileData.X, _tileData.Y, TileCache.DataTypeEnum.StreetMap, 
-                    TileCache.DataProviderEnum.OSM, "png");
-
-            /*var td2 = TileCache.Fetch(_tileData.ZoomLevel,
+            if (UseCache)
+                TileCache.Store(ImageConversion.EncodeToPNG(tex), _tileData.ZoomLevel,
                     _tileData.X, _tileData.Y, TileCache.DataTypeEnum.StreetMap,
-                    TileCache.DataProviderEnum.OSM, "png");
-
-            var tex = new Texture2D(_tileData.MapPixelSize, _tileData.MapPixelSize);
-            tex.LoadRawTextureData(td1);
-            GetComponent<Renderer>().material.mainTexture = tex;*/
+                    TileCache.DataProviderEnum.OSM, _pngExtenstion);
 
             if (ResizePlane)
-            {
                 DoResizePlane(tex);
-            }
 
             //Destroy(tex);
             //_imageLoader = null;
@@ -108,23 +108,30 @@ public class DynamicTextureDownloader : MonoBehaviour
         }
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="tex"></param>
+    //*************************************************************************
     private void DoResizePlane(Texture tex)
     {
         // Keep the longest edge at the same length
         if (tex.width < tex.height)
-        {
             transform.localScale = new Vector3(
                 _originalScale.z * tex.width / tex.height,
                 _originalScale.y, _originalScale.z);
-        }
         else
-        {
             transform.localScale = new Vector3(
                 _originalScale.x, _originalScale.y,
                 _originalScale.x * tex.height / tex.width);
-        }
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     protected virtual void OnStartLoad()
     {
         _appliedToTexture = false;
@@ -132,14 +139,22 @@ public class DynamicTextureDownloader : MonoBehaviour
         _imageLoader.SendWebRequest();//T3
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     protected virtual void OnEndLoad()
     {
-
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     protected virtual void OnUpdate()
     {
-
     }
 }
 
@@ -148,11 +163,23 @@ public class MapTile : DynamicTextureDownloader
 {
     public IMapUrlBuilder MapBuilder { get; set; }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     public MapTile()
     {
         MapBuilder = MapBuilder != null ? MapBuilder : new OpenStreetMapTileBuilder();
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="tiledata"></param>
+    /// <param name="forceReload"></param>
+    //*************************************************************************
     public void SetTileData(TileInfo tiledata, bool forceReload = false)
     {
         if (_tileData == null || !_tileData.Equals(tiledata) || forceReload)
@@ -162,6 +189,11 @@ public class MapTile : DynamicTextureDownloader
         }
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     public TileInfo TileData
     {
         get { return _tileData; }
@@ -178,6 +210,11 @@ public class MapTile : DynamicTextureDownloader
 
     private WWW _downloader;
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     private void StartLoadElevationDataFromWeb()
     {
         if (_tileData == null)
@@ -198,11 +235,21 @@ public class MapTile : DynamicTextureDownloader
         IsDownloading = true;
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     protected override void OnUpdate()
     {
         ProcessElevationDataFromWeb();
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     private void ProcessElevationDataFromWeb()
     {
         if (TileData == null || _downloader == null)
@@ -223,6 +270,12 @@ public class MapTile : DynamicTextureDownloader
         }
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="elevationData"></param>
+    //*************************************************************************
     private void ApplyElevationData(ElevationResult elevationData)
     {
         try
@@ -252,6 +305,13 @@ public class MapTile : DynamicTextureDownloader
         }
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="mesh"></param>
+    //*************************************************************************
+    /// <param name="verts"></param>
     private void RebuildMesh(Mesh mesh, List<Vector3> verts)
     {
         mesh.SetVertices(verts);
