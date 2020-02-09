@@ -208,7 +208,7 @@ public class MapTile : DynamicTextureDownloader
 
     public bool IsDownloading { get; private set; }
 
-    private WWW _downloader;
+    private UnityEngine.Networking.UnityWebRequest _downloader = null;
 
     //*************************************************************************
     /// <summary>
@@ -231,7 +231,8 @@ public class MapTile : DynamicTextureDownloader
         // this URL can only be called 5 times per second
         // https://social.msdn.microsoft.com/Forums/en-US/3e8b767d-36ee-44bf-92f1-ccb94e20779c/too-many-requests-error-started-on-21617
 
-        _downloader = new WWW(urlData);
+        _downloader = UnityEngine.Networking.UnityWebRequest.Get(urlData);
+        _downloader.SendWebRequest();
         IsDownloading = true;
     }
 
@@ -260,7 +261,7 @@ public class MapTile : DynamicTextureDownloader
         if (IsDownloading && _downloader.isDone)
         {
             IsDownloading = false;
-            var elevationData = JsonUtility.FromJson<ElevationResult>(_downloader.text);
+            var elevationData = JsonUtility.FromJson<ElevationResult>(_downloader.downloadHandler.text);
             if (elevationData == null)
             {
                 return;
