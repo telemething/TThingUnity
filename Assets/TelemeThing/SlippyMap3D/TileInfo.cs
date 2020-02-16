@@ -31,6 +31,17 @@ public class TileInfo : IEquatable<TileInfo>
         CenterLocation = centerTileCenterLocation;
     }
 
+    public WorldCoordinate TopLeftLatLon()
+    {
+        WorldCoordinate p = new WorldCoordinate();
+        double n = Math.PI - ((2.0 * Math.PI * Y) / Math.Pow(2.0, ZoomLevel));
+
+        p.Lon = (float)((X / Math.Pow(2.0, ZoomLevel) * 360.0) - 180.0);
+        p.Lat = (float)(180.0 / Math.PI * Math.Atan(Math.Sinh(n)));
+
+        return p;
+    }
+
     private void SetStandardValues(float mapTileSize)
     {
         MapTileSize = mapTileSize;

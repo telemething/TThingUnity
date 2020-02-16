@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4374684510397256718}
   - component: {fileID: 7817477884243570334}
   - component: {fileID: 1068700548374845529}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MapTile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -109,3 +109,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ImageUrl: 
   ResizePlane: 0
+  UseCache: 1

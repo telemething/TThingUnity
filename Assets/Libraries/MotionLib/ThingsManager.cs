@@ -140,6 +140,8 @@ namespace T1
         //print("2 + 3 = " + utils.c);
 
         TestLerc();
+
+        PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679,300));
     }
 
     //*************************************************************************
@@ -488,6 +490,55 @@ namespace T1
         //TODO * Optimize frustum by moving farClipPlane as close as possible
         //TODO * Optimize frustum by moving nearClipPlane as far away as possible
     }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="trueToShow"></param>
+    //*************************************************************************
+    public static void PlaceTerrain(PointLatLonAlt coords)
+    {
+        var terrains = Utils.FindObjectsInScene("Terrain");
+
+        if (terrains.Count == 0)
+            return;
+
+        var mb = terrains[0]?.GetComponent<MapBuilder>();
+
+        if (null == mb)
+            return;
+
+        //fetch and place the map
+        mb.ShowMap((float)coords.Lat, (float)coords.Lon, 14, 8);
+
+        //find the top left coords of the center tile
+        var CenterTileTopLeft = new PointLatLonAlt(
+            mb.CenterTileTopLeftLatitude, mb.CenterTileTopLeftLongitude, 0);
+
+        //find the x and z offset from my origin to tile top left
+        var offset = GeoLib.GpsUtils.GeodeticToEnu(CenterTileTopLeft, coords);
+
+        //move the map by the offset
+        terrains[0].transform.position += ThingGameObject.ConvertPoint(offset);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="trueToShow"></param>
+    //*************************************************************************
+    public static void ShowTerrain(bool trueToShow)
+    {
+        var dml = Utils.FindObjectsInScene("Terrain");
+
+        if (dml.Count == 0)
+            return;
+
+        dml[0]?.SetActive(trueToShow);
+    }
+
 }
 
 #endregion //ThingsManager

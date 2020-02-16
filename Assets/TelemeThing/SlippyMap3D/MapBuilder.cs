@@ -11,6 +11,9 @@ public class MapBuilder : MonoBehaviour
     public float Latitude = 47.642567f;
     public float Longitude = -122.136919f;
 
+    public float CenterTileTopLeftLatitude { get; private set; }
+    public float CenterTileTopLeftLongitude { get; private set; }
+
     public GameObject MapTilePrefab;
 
     public float MapSize = 12;
@@ -20,6 +23,17 @@ public class MapBuilder : MonoBehaviour
 
     void Start()
     {
+        //_mapTiles = new List<MapTile>();
+        //ShowMap();
+    }
+
+    public void ShowMap(float lat, float lon, int zoom, int size)
+    {
+        Latitude = lat;
+        Longitude = lon;
+        ZoomLevel = zoom;
+        MapSize = size;
+
         _mapTiles = new List<MapTile>();
         ShowMap();
     }
@@ -31,6 +45,15 @@ public class MapBuilder : MonoBehaviour
 
         _centerTile = new TileInfo(new WorldCoordinate { Lat = Latitude, Lon = Longitude }, 
             ZoomLevel, MapTileSize);
+
+        var LL = _centerTile.TopLeftLatLon();
+
+        CenterTileTopLeftLatitude = LL.Lat;
+        CenterTileTopLeftLongitude = LL.Lon;
+
+        //_centerTile.X -= (int)(MapTileSize / 2.0f);
+        //_centerTile.Y += (int)(MapTileSize / 2.0f);
+
         LoadTiles();
         Camera.main.farClipPlane = 10000;
     }
