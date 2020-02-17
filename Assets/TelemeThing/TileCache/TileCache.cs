@@ -243,6 +243,18 @@ public class TileCache : MonoBehaviour
     static bool DoesExist(string fileName)
     {
         var fi = new System.IO.FileInfo(fileName);
+
+        if (fi.Exists)
+        {
+            print(string.Format("Cache HIT : {0}", fileName));
+            System.Console.WriteLine(string.Format("Cache HIT : {0}", fileName));
+        }
+        else
+        {
+            print(string.Format("Cache MIS : {0} --------------------", fileName));
+            System.Console.WriteLine(string.Format("Cache MIS : {0}", fileName));
+        }
+
         return fi.Exists;
     }
 

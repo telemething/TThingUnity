@@ -76,6 +76,11 @@ namespace T1
     private static double _maxThingDistance = _maxMaxThingDistance;
     private static double _minThingDistance = _minMinThingDistance;
 
+    private GameObject _terrain = null;
+    private bool _gotMainCameraAltitudeOverTerrain = false;
+    private float _mainCameraAltitudeOverTerrain = 0f;
+    private float _mainCameraAltitudeOverTerrainOffset = 4f;
+
     private ThingMotion _TM;
 
     //TODO * For now, terrain is just a flat plane with a point at 0,0,0
@@ -139,9 +144,14 @@ namespace T1
         //utils.AddValues(2, 3);
         //print("2 + 3 = " + utils.c);
 
-        TestLerc();
+        //TestLerc();
 
-        PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679,300));
+        var terrains = Utils.FindObjectsInScene("Terrain");
+
+        if (terrains.Count != 0)
+            _terrain = terrains[0];
+
+        PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679,1000));
     }
 
     //*************************************************************************
@@ -167,7 +177,70 @@ namespace T1
 
         //T1.CLogger.LogThis("ThingsManager.Update()");
 
-        things?.ForEach(thing => {if(thing.Self == Thing.SelfEnum.Self) SetSelf(thing); else SetOther(thing); });
+        things?.ForEach(thing => 
+        {
+            try
+            {
+                if (null == thing)
+                    return;
+                if (thing.Self == Thing.SelfEnum.Self)
+                    SetSelf(thing);
+                else
+                    SetOther(thing);
+            }
+            catch(Exception ex)
+            {
+                var ff = ex.Message;
+            }
+        });
+
+        if (!_gotMainCameraAltitudeOverTerrain)
+        {
+            _gotMainCameraAltitudeOverTerrain =
+                TryGetAltitudeOverTerrain(out _mainCameraAltitudeOverTerrain);
+
+            if (_gotMainCameraAltitudeOverTerrain)
+            {
+                //move terrain by offset
+                _terrain.transform.position += 
+                    new Vector3(0,_mainCameraAltitudeOverTerrain - _mainCameraAltitudeOverTerrainOffset, 0);
+            }
+        }
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="altitude"></param>
+    /// <returns></returns>
+    //*********************************************************************
+    bool TryGetAltitudeOverTerrain(out float altitude)
+    {
+        altitude = 0;
+
+        if (null == _terrain)
+            return false;
+
+        int layerMask = 1 << _terrain.layer;
+
+        // look down
+        if (Physics.Raycast(Camera.main.transform.position, Vector3.down, 
+            out RaycastHit hit, Mathf.Infinity, layerMask))
+        {
+            altitude = hit.distance;
+            return true;
+        }
+
+        // look up
+        if (Physics.Raycast(Camera.main.transform.position, Vector3.up, 
+            out hit, Mathf.Infinity, layerMask))
+        {
+            altitude = hit.distance;
+            return true;
+        }
+
+        return false;
     }
 
     //*********************************************************************
@@ -509,8 +582,11 @@ namespace T1
         if (null == mb)
             return;
 
+        var zoom = mb.ZoomLevel; //* TODO * make UI adjustable
+        var size = mb.MapSize;   //* TODO * make UI adjustable
+
         //fetch and place the map
-        mb.ShowMap((float)coords.Lat, (float)coords.Lon, 14, 8);
+        mb.ShowMap((float)coords.Lat, (float)coords.Lon, zoom, (int)size);
 
         //find the top left coords of the center tile
         var CenterTileTopLeft = new PointLatLonAlt(
@@ -521,6 +597,42 @@ namespace T1
 
         //move the map by the offset
         terrains[0].transform.position += ThingGameObject.ConvertPoint(offset);
+
+        /*int layerMask = 1 << terrains[0].layer;
+        RaycastHit hit;
+
+        // Does the ray intersect any objects which are in the player layer.
+        if (Physics.Raycast(Camera.main.transform.position, Vector3.down, out hit, Mathf.Infinity, layerMask))
+        {
+            var hh1 = hit.distance;
+        }
+
+        if (Physics.Raycast(Camera.main.transform.position, Vector3.up, out hit, Mathf.Infinity, layerMask))
+        {
+            var hh2 = hit.distance;
+        }*/
+
+        //find the height of the terrain below me *Assumes I am standing on the ground
+
+        /*Ray ray = new Ray(coords, Vector3.down);
+
+        if (ThingsManager.HorizontalPlane.Raycast(ray, out var distance))
+        {
+            intersectionPoint = ray.GetPoint(distance);
+            return true;
+        }
+
+
+        //Find the spot on the terrain below the UAV.
+        //The arguments are the position of the UAV, and the down vector
+        if (FindRayTerrainIntersection(
+            uavPosition,
+            Vector3.down,
+            out var padPosition))
+        {
+            breadcrumb = new ThingBreadcrumbObject();
+            breadcrumb._gameObject.transform.position = padPosition;
+        }*/
     }
 
     //*************************************************************************

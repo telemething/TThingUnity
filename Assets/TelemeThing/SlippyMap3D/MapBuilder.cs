@@ -5,11 +5,10 @@ using UnityEngine;
 public class MapBuilder : MonoBehaviour
 {
     public int ZoomLevel = 12;
-
     public float MapTileSize = 0.5f;
-
     public float Latitude = 47.642567f;
     public float Longitude = -122.136919f;
+    public bool BuildOnStart = false;
 
     public float CenterTileTopLeftLatitude { get; private set; }
     public float CenterTileTopLeftLongitude { get; private set; }
@@ -21,14 +20,23 @@ public class MapBuilder : MonoBehaviour
     private TileInfo _centerTile;
     private List<MapTile> _mapTiles;
 
+    private UnityEngine.UI.Text _infoTextLarge = null;
+
     void Start()
     {
-        //_mapTiles = new List<MapTile>();
-        //ShowMap();
+        _infoTextLarge = Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("InfoTextLarge");
+
+        if (BuildOnStart)
+        {
+            _mapTiles = new List<MapTile>();
+            ShowMap();
+        }
     }
 
     public void ShowMap(float lat, float lon, int zoom, int size)
     {
+        _infoTextLarge = Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("InfoTextLarge");
+
         Latitude = lat;
         Longitude = lon;
         ZoomLevel = zoom;
@@ -61,12 +69,15 @@ public class MapBuilder : MonoBehaviour
     private void LoadTiles(bool forceReload = false)
     {
         var size = (int)(MapSize / 2);
+        var countFetched = 0;
 
         var tileIndex = 0;
         for (var x = -size; x <= size; x++)
         {
             for (var y = -size; y <= size; y++)
             {
+                _infoTextLarge.text = $"Fetching Tile: {countFetched++} of: {(size+1)*(size+1)}";
+
                 var tile = GetOrCreateTile(x, y, tileIndex++);
                 tile.SetTileData(new TileInfo(_centerTile.X - x, _centerTile.Y + y, ZoomLevel, MapTileSize, _centerTile.CenterLocation),
                     forceReload);
@@ -77,6 +88,8 @@ public class MapBuilder : MonoBehaviour
                 //System.Threading.Thread.Sleep(200);
             }
         }
+
+        _infoTextLarge.text = $"";
     }
 
     private MapTile GetOrCreateTile(int x, int y, int i)
