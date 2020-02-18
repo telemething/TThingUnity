@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -12,9 +13,19 @@ public class MapBuilder : MonoBehaviour
 
     public float CenterTileTopLeftLatitude { get; private set; }
     public float CenterTileTopLeftLongitude { get; private set; }
+    public int MaxElevation { get; private set; }
+    public int MinElevation { get; private set; }
+
+    public float MapTotal2DEdgeLength { get { 
+            return MapTileSize * (MapSize + 1); } }
+    public float MapTotal2DDiagonalLength { get { 
+            return (float)Math.Sqrt(MapTotal2DEdgeLength * MapTotal2DEdgeLength * 2); } }
+    public float MapTotal3DDiagonalLength { get { 
+            return (float)Math.Sqrt((MapTotal2DDiagonalLength * MapTotal2DDiagonalLength) + (MaxElevation * MaxElevation)); } }
 
     public GameObject MapTilePrefab;
 
+    // the number of tiles per edge (-1 because center tile)
     public float MapSize = 12;
 
     private TileInfo _centerTile;
@@ -63,7 +74,14 @@ public class MapBuilder : MonoBehaviour
         //_centerTile.Y += (int)(MapTileSize / 2.0f);
 
         LoadTiles();
-        Camera.main.farClipPlane = 10000;
+        //Camera.main.farClipPlane = 10000;
+
+        if (BuildOnStart)
+        {
+            //assuming camera is in center, set clip plane to encompas entire map
+            Camera.main.farClipPlane = Math.Max(
+                Camera.main.farClipPlane, MapTotal2DDiagonalLength);
+        }
     }
 
     private void LoadTiles(bool forceReload = false)
@@ -79,10 +97,17 @@ public class MapBuilder : MonoBehaviour
                 _infoTextLarge.text = $"Fetching Tile: {countFetched++} of: {(size+1)*(size+1)}";
 
                 var tile = GetOrCreateTile(x, y, tileIndex++);
-                tile.SetTileData(new TileInfo(_centerTile.X - x, _centerTile.Y + y, ZoomLevel, MapTileSize, _centerTile.CenterLocation),
+
+                tile.SetTileData(new TileInfo(
+                    _centerTile.X - x, _centerTile.Y + y, 
+                    ZoomLevel, MapTileSize, _centerTile.CenterLocation),
                     forceReload);
+
                 tile.gameObject.name = string.Format("({0},{1}) - {2},{3}", x, y, tile.TileData.X,
                     tile.TileData.Y);
+
+                MaxElevation = Math.Max(MaxElevation, tile.MaxElevation);
+                MinElevation = Math.Min(MinElevation, tile.MinElevation);
 
                 // temporary
                 //System.Threading.Thread.Sleep(200);

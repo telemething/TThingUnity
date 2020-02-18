@@ -164,6 +164,8 @@ public class MapTile : DynamicTextureDownloader
     public IMapUrlBuilder MapBuilder { get; set; }
     private string _txtExtenstion = "txt";
     private static object _webReqLock = new object();
+    public int MaxElevation { get; private set; }
+    public int MinElevation { get; private set; }
 
     //*************************************************************************
     /// <summary>
@@ -320,6 +322,9 @@ public class MapTile : DynamicTextureDownloader
             var mesh = GetComponent<MeshFilter>().mesh;
             for (var i = 0; i < mesh.vertexCount; i++)
             {
+                MaxElevation = Math.Max(MaxElevation, resource.elevations[i]);
+                MinElevation = Math.Min(MinElevation, resource.elevations[i]);
+
                 var newPos = mesh.vertices[i];
                 newPos.y = resource.elevations[i];
                 verts.Add(newPos);
@@ -337,8 +342,8 @@ public class MapTile : DynamicTextureDownloader
     /// 
     /// </summary>
     /// <param name="mesh"></param>
-    //*************************************************************************
     /// <param name="verts"></param>
+    //*************************************************************************
     private void RebuildMesh(Mesh mesh, List<Vector3> verts)
     {
         mesh.SetVertices(verts);
