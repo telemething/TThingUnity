@@ -16,7 +16,7 @@ public class Thing
     private object _gameObjectObject = null;
     private Dictionary<string,object> _tagList = null;
 
-    public enum TypeEnum { UnInit, Unknown, Uav, Rover, Stationary, Person }
+    public enum TypeEnum { UnInit, Unknown, Uav, Rover, Stationary, Person, GazeHipoint }
 
     public enum SelfEnum { UnInit, Unknown, Self, Other }
 

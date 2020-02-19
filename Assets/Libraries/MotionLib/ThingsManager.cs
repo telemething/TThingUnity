@@ -690,11 +690,11 @@ public class ThingGameObject
 
     protected Thing _thing = null;
     protected GameObject _gameObject = null;
-    protected GameObject _haloObject = null;
+    protected HaloObject _haloObject = null;
     protected GameObject _gimbal = null;
     protected GameObject _gimbalCameraHousing = null;
-    protected GameObject _gimbalCameraGazeHitpoint = null;
-    protected GameObject _gimbalCameraGazeHitpointHalo = null;
+    protected ThingGazeHitpointObject _gimbalCameraGazeHitpoint = null;
+    //protected GameObject _gimbalCameraGazeHitpointHalo = null;
     protected Camera _gimbalCamera = null;
     protected Interactable _interactableObject = null;
     protected ThemeDefinition _newThemeType;
@@ -711,6 +711,8 @@ public class ThingGameObject
     //The position of the gimbal camera's gaze intersection with the terrain
     Vector3 _gimbalCameraGazeTerrainIntersctionPoint;
     bool _haveGimbalCameraGazeTerrainIntersctionPoint = false;
+
+    public GameObject gameObject { get { return _gameObject; } }
 
     //*************************************************************************
     /// <summary>
@@ -790,49 +792,6 @@ public class ThingGameObject
         rv.RotateLerpTime = 0.5f;
 
         _directionIndicator.Awake2();
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    //*************************************************************************
-
-    public GameObject AddHalo(GameObject haloParent)
-    {
-        GameObject objPrefab = Resources.Load("ThingHaloRing") as GameObject;
-        GameObject haloObject = UnityEngine.Object.Instantiate(objPrefab) as GameObject;
-        haloObject.name = haloParent.name + "Halo";
-        haloObject.AddComponent<MeshRenderer>();
-        haloObject.transform.SetParent(haloParent.transform, true);
-        haloObject.transform.localScale = new Vector3(1, 1, 1);
-        haloObject.transform.eulerAngles = new Vector3(90, 0, 0);
-        haloObject.transform.position = new Vector3(0, 0, 0);
-        haloObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
-        haloObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(255, 0, 0));
-        haloObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
-
-        return haloObject;
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    //*************************************************************************
-
-    public void AddGimbalCameraGazeHitpoint()
-    {
-        _gimbalCameraGazeHitpoint = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        _gimbalCameraGazeHitpoint.name = "Hitpoint";
-        _gimbalCameraGazeHitpoint.transform.localScale = new Vector3(1, 1, 1);
-        _gimbalCameraGazeHitpoint.transform.position = new Vector3(0, 0, 0);
-        _gimbalCameraGazeHitpoint.AddComponent<MeshRenderer>();
-        _gimbalCameraGazeHitpoint.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
-        _gimbalCameraGazeHitpoint.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
-        _gimbalCameraGazeHitpoint.SetActive(false);
-
-        _gimbalCameraGazeHitpointHalo = AddHalo(_gimbalCameraGazeHitpoint);
     }
 
     //*************************************************************************
@@ -938,7 +897,9 @@ public class ThingGameObject
 
         _gimbalCamera.targetTexture = texture[0];
 
-        AddGimbalCameraGazeHitpoint();
+        _gimbalCameraGazeHitpoint = new ThingGazeHitpointObject();
+
+        //AddGimbalCameraGazeHitpoint();
     }
 
     //*************************************************************************
@@ -1240,14 +1201,14 @@ public class ThingGameObject
         _gameObject.transform.localRotation = ConvertQuat(_thing.Pose.Orient.Quat);
 
         SetScale(this, 50);
-        SetHalo(_haloObject);
+        _haloObject?.Set();
 
-        /*if (null != _gimbalCameraGazeHitpoint)
+        if (null != _gimbalCameraGazeHitpoint)
         {
-            var dist = GetDistance(ThingsManager.Self, _gimbalCameraGazeHitpoint);
-            SetScale(_gimbalCameraGazeHitpoint, (float)dist, 50);
-            SetHalo(_gimbalCameraGazeHitpointHalo);
-        }*/
+            //var dist = GetDistance(ThingsManager.Self, _gimbalCameraGazeHitpoint);
+            SetScale(_gimbalCameraGazeHitpoint, 50);
+            _gimbalCameraGazeHitpoint._haloObject?.Set();
+        }
 
         SetGimbal(ConvertQuat(_thing.Pose.GimbalOrient.Quat));
         SetGimbalCamera(_gimbalCamera);
@@ -1305,10 +1266,10 @@ public class ThingGameObject
         if (null == _gimbalCameraGazeHitpoint)
             return;
 
-        _gimbalCameraGazeHitpoint.SetActive(active);
+        _gimbalCameraGazeHitpoint._gameObject.SetActive(active);
 
         if(active)
-            _gimbalCameraGazeHitpoint.transform.position = hitpoint;
+            _gimbalCameraGazeHitpoint._gameObject.transform.position = hitpoint;
     }
 
     //*************************************************************************
@@ -1348,37 +1309,6 @@ public class ThingGameObject
 
         if (null != gimbal)
             _gimbal.transform.localRotation = orient;
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    //*************************************************************************
-    private void SetHalo(GameObject haloObject)
-    {
-        float haloScale = 1;
-
-        if (null != haloObject)
-        {
-            // https://docs.unity3d.com/ScriptReference/Transform.LookAt.html
-            if (ThingsManager.Self.GameObjectObject is ThingGameObject selfThing)
-                if (null != selfThing._gameObject)
-                {
-                    haloObject.transform.LookAt(selfThing._gameObject.transform);
-                    //add another 90
-                    haloObject.transform.eulerAngles += new Vector3(90, 0, 0);
-
-                    /*if (_thing.DistanceToObserver > _haloScaleFactor)
-                        haloScale = (float)_thing.DistanceToObserver / _haloScaleFactor;
-
-                    haloObject.transform.localScale = new Vector3(
-                        haloScale, haloScale, haloScale);*/
-
-                    haloObject.transform.localScale = new Vector3(
-                        8, 8, 8);
-                }
-        }
     }
 
     private void SetScale(ThingGameObject thingGameObject, float maxApparentDistance)
@@ -1451,7 +1381,7 @@ public class ThingUavObject : ThingGameObject
         base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
         base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
 
-        _haloObject = AddHalo(_gameObject);
+        _haloObject = new HaloObject(_gameObject, 8f);
         SetupGimbal();
         AddDirectionIndicator();
     }
@@ -1478,6 +1408,64 @@ public class ThingUavObject : ThingGameObject
 
 #endregion //ThingUavObject
 
+#region HaloObject
+
+//*************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*************************************************************************
+
+public class HaloObject 
+{
+    GameObject _gameObject;
+    public GameObject gameObject { get { return _gameObject; } }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    public HaloObject(GameObject haloParent, float localScale)
+    {
+        GameObject objPrefab = Resources.Load("ThingHaloRing") as GameObject;
+        _gameObject = UnityEngine.Object.Instantiate(objPrefab) as GameObject;
+        _gameObject.name = haloParent.name + "Halo";
+        _gameObject.AddComponent<MeshRenderer>();
+        _gameObject.transform.SetParent(haloParent.transform, true);
+        _gameObject.transform.localScale = new Vector3(localScale, localScale, localScale);
+        _gameObject.transform.eulerAngles = new Vector3(90, 0, 0);
+        _gameObject.transform.position = new Vector3(0, 0, 0);
+        _gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        _gameObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(255, 0, 0));
+        _gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    public void Set()
+    {
+        if (null == _gameObject)
+            return;
+
+        // https://docs.unity3d.com/ScriptReference/Transform.LookAt.html
+        if (!(ThingsManager.Self.GameObjectObject is ThingGameObject selfThing))
+            return;
+
+        if (null == selfThing.gameObject)
+            return;
+
+        gameObject.transform.LookAt(selfThing.gameObject.transform);
+        //add another 90
+        gameObject.transform.eulerAngles += new Vector3(90, 0, 0);
+    }
+}
+
+#endregion //HaloObject
+
 #region ThingLandingPadObject
 
 //*************************************************************************
@@ -1498,7 +1486,6 @@ public class ThingLandingPadObject : ThingGameObject
 
     public ThingLandingPadObject()
     {
-        //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
         GameObject resourceObject = Resources.Load("LandingPad") as GameObject;
         base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
         base._gameObject.name = "LANDINGPAD" + _count++.ToString();
@@ -1511,7 +1498,6 @@ public class ThingLandingPadObject : ThingGameObject
 
     public ThingLandingPadObject(Vector3 position)
     {
-        //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
         GameObject resourceObject = Resources.Load("LandingPad") as GameObject;
         base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
         base._gameObject.name = "LANDINGPAD" + _count++.ToString();
@@ -1656,7 +1642,13 @@ public class ThingGazeHitpointObject : ThingGameObject
         base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
         base._gameObject.SetActive(false);
 
-        _haloObject = AddHalo(base._gameObject);
+        base._thing = new Thing(base._gameObject.name, Thing.TypeEnum.GazeHipoint, 
+            Thing.SelfEnum.Other, Thing.RoleEnum.Observed);
+
+        //TODO * Very temporary
+        base._thing.DistanceToObserver = 100;
+
+        _haloObject = new HaloObject(_gameObject, 6f);
     }
 }
 
