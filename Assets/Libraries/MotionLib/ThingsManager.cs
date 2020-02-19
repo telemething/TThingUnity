@@ -686,12 +686,15 @@ public class ThingGameObject
     // If true, will use a flat plane, otherwise will use a GEO plane
     private bool _useFlatTerrain = false;
 
+    private float _haloScaleFactor = 16f;
+
     protected Thing _thing = null;
     protected GameObject _gameObject = null;
     protected GameObject _haloObject = null;
     protected GameObject _gimbal = null;
     protected GameObject _gimbalCameraHousing = null;
     protected GameObject _gimbalCameraGazeHitpoint = null;
+    protected GameObject _gimbalCameraGazeHitpointHalo = null;
     protected Camera _gimbalCamera = null;
     protected Interactable _interactableObject = null;
     protected ThemeDefinition _newThemeType;
@@ -761,6 +764,12 @@ public class ThingGameObject
         };*/
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
     public void AddDirectionIndicator()
     {
         _directionIndicator = _gameObject.AddComponent<HoloToolkit.Unity.DirectionIndicator>();
@@ -789,19 +798,21 @@ public class ThingGameObject
     /// </summary>
     //*************************************************************************
 
-    public void AddHalo()
+    public GameObject AddHalo(GameObject haloParent)
     {
         GameObject objPrefab = Resources.Load("ThingHaloRing") as GameObject;
-        _haloObject = UnityEngine.Object.Instantiate(objPrefab) as GameObject;
-        _haloObject.name = _gameObject.name + "Halo";
-        _haloObject.AddComponent<MeshRenderer>();
-        _haloObject.transform.SetParent(_gameObject.transform, true);
-        _haloObject.transform.localScale = new Vector3(1, 1, 1);
-        _haloObject.transform.eulerAngles = new Vector3(90, 0, 0);
-        _haloObject.transform.position = new Vector3(0, 0, 0);
-        _haloObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
-        _haloObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(255, 0, 0));
-        _haloObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+        GameObject haloObject = UnityEngine.Object.Instantiate(objPrefab) as GameObject;
+        haloObject.name = haloParent.name + "Halo";
+        haloObject.AddComponent<MeshRenderer>();
+        haloObject.transform.SetParent(haloParent.transform, true);
+        haloObject.transform.localScale = new Vector3(1, 1, 1);
+        haloObject.transform.eulerAngles = new Vector3(90, 0, 0);
+        haloObject.transform.position = new Vector3(0, 0, 0);
+        haloObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        haloObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(255, 0, 0));
+        haloObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+
+        return haloObject;
     }
 
     //*************************************************************************
@@ -820,6 +831,8 @@ public class ThingGameObject
         _gimbalCameraGazeHitpoint.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
         _gimbalCameraGazeHitpoint.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
         _gimbalCameraGazeHitpoint.SetActive(false);
+
+        _gimbalCameraGazeHitpointHalo = AddHalo(_gimbalCameraGazeHitpoint);
     }
 
     //*************************************************************************
@@ -1226,7 +1239,16 @@ public class ThingGameObject
 
         _gameObject.transform.localRotation = ConvertQuat(_thing.Pose.Orient.Quat);
 
-        SetHalo();
+        SetScale(this, 50);
+        SetHalo(_haloObject);
+
+        /*if (null != _gimbalCameraGazeHitpoint)
+        {
+            var dist = GetDistance(ThingsManager.Self, _gimbalCameraGazeHitpoint);
+            SetScale(_gimbalCameraGazeHitpoint, (float)dist, 50);
+            SetHalo(_gimbalCameraGazeHitpointHalo);
+        }*/
+
         SetGimbal(ConvertQuat(_thing.Pose.GimbalOrient.Quat));
         SetGimbalCamera(_gimbalCamera);
 
@@ -1333,27 +1355,59 @@ public class ThingGameObject
     /// 
     /// </summary>
     //*************************************************************************
-    private void SetHalo()
+    private void SetHalo(GameObject haloObject)
     {
         float haloScale = 1;
 
-        if (null != _haloObject)
+        if (null != haloObject)
         {
             // https://docs.unity3d.com/ScriptReference/Transform.LookAt.html
             if (ThingsManager.Self.GameObjectObject is ThingGameObject selfThing)
                 if (null != selfThing._gameObject)
                 {
-                    _haloObject.transform.LookAt(selfThing._gameObject.transform);
+                    haloObject.transform.LookAt(selfThing._gameObject.transform);
                     //add another 90
-                    _haloObject.transform.eulerAngles += new Vector3(90, 0, 0);
+                    haloObject.transform.eulerAngles += new Vector3(90, 0, 0);
 
-                    if (_thing.DistanceToObserver > 8)
-                        haloScale = (float)_thing.DistanceToObserver / 8F;
+                    /*if (_thing.DistanceToObserver > _haloScaleFactor)
+                        haloScale = (float)_thing.DistanceToObserver / _haloScaleFactor;
 
-                    _haloObject.transform.localScale = new Vector3(
-                        haloScale, haloScale, haloScale);
+                    haloObject.transform.localScale = new Vector3(
+                        haloScale, haloScale, haloScale);*/
+
+                    haloObject.transform.localScale = new Vector3(
+                        8, 8, 8);
                 }
         }
+    }
+
+    private void SetScale(ThingGameObject thingGameObject, float maxApparentDistance)
+    {
+        float haloScale = 1;
+
+        if (null != thingGameObject)
+            if (null != thingGameObject._gameObject)
+            {
+                if (thingGameObject._thing.DistanceToObserver > maxApparentDistance)
+                    haloScale = (float)_thing.DistanceToObserver / maxApparentDistance;
+
+                thingGameObject._gameObject.transform.localScale = new Vector3(
+                    haloScale, haloScale, haloScale);
+            }
+    }
+
+    private void SetScale(GameObject gameObject, float distanceToObserver, float maxApparentDistance)
+    {
+        float scale = 1;
+
+        if (null != gameObject)
+            {
+                if (distanceToObserver > maxApparentDistance)
+                    scale = distanceToObserver / maxApparentDistance;
+
+                gameObject.transform.localScale = new Vector3(
+                    scale, scale, scale);
+            }
     }
 }
 
@@ -1397,7 +1451,7 @@ public class ThingUavObject : ThingGameObject
         base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
         base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
 
-        AddHalo();
+        _haloObject = AddHalo(_gameObject);
         SetupGimbal();
         AddDirectionIndicator();
     }
@@ -1572,6 +1626,41 @@ public class ThingPersonObject : ThingGameObject
 }
 
 #endregion //ThingPersonObject
+
+#region ThingGazeHitpointObject
+
+//*************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*************************************************************************
+
+public class ThingGazeHitpointObject : ThingGameObject
+{
+    private static int _count = 0;
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+
+    public ThingGazeHitpointObject()
+    {
+        base._gameObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        base._gameObject.name = "GazeHitpoint" + _count++.ToString();
+        base._gameObject.transform.localScale = new Vector3(1, 1, 1);
+        base._gameObject.transform.position = new Vector3(0, 0, 0);
+        base._gameObject.AddComponent<MeshRenderer>();
+        base._gameObject.GetComponent<Renderer>().material.color = new Color(255, 0, 0);
+        base._gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+        base._gameObject.SetActive(false);
+
+        _haloObject = AddHalo(base._gameObject);
+    }
+}
+
+#endregion //ThingGazeHitpointObject
 
 #region ThingUninitObject
 
