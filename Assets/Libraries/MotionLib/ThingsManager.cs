@@ -594,12 +594,6 @@ namespace T1
         //fetch and place the map
         mb.ShowMap((float)coords.Lat, (float)coords.Lon, zoom, (int)size);
 
-        //assuming camera is in center, set clip plane to encompas entire map
-        /*var mapEdgeLength = mb.MapTotalEdgeLength;
-        Camera.main.farClipPlane = Math.Max(
-            Camera.main.farClipPlane,
-            (float)Math.Sqrt(mapEdgeLength / 2 * mapEdgeLength / 2));*/
-
         Camera.main.farClipPlane = Math.Max(
             Camera.main.farClipPlane, mb.MapTotal3DDiagonalLength/2);
 
@@ -611,7 +605,7 @@ namespace T1
         var offset = GeoLib.GpsUtils.GeodeticToEnu(CenterTileTopLeft, coords);
 
         //move the map by the offset
-        terrains[0].transform.position += ThingGameObject.ConvertPoint(offset);
+        terrains[0].transform.position += PointENU.ToVector3(offset);
 
         /*int layerMask = 1 << terrains[0].layer;
         RaycastHit hit;
@@ -1045,55 +1039,6 @@ public class ThingGameObject
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="from"></param>
-    /// <param name="to"></param>
-    /// <returns></returns>
-    //*************************************************************************
-
-    private static double GetDistance(PointENU from, PointENU to)
-    {
-        return Math.Sqrt(
-            Math.Pow((to.E - from.E), 2) + 
-            Math.Pow((to.N - from.N), 2) + 
-            Math.Pow((to.U - from.U), 2));
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="from"></param>
-    /// <param name="to"></param>
-    /// <returns></returns>
-    //*************************************************************************
-
-    private static double GetDistance(Thing from, Thing to)
-    {
-        if (null == from)
-            return 0;
-
-        if (null == to)
-            return 0;
-
-        if (null == from.Pose)
-            return 0;
-
-        if (null == to.Pose)
-            return 0;
-
-        if (null == from.Pose.PointEnu)
-            return 0;
-
-        if (null == to.Pose.PointEnu)
-            return 0;
-
-        return GetDistance(from.Pose.PointEnu, to.Pose.PointEnu);
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
     /// <param name="quatIn"></param>
     /// <returns></returns>
     //*************************************************************************
@@ -1101,14 +1046,6 @@ public class ThingGameObject
     private static UnityEngine.Quaternion ConvertQuat(System.Numerics.Quaternion quatIn)
     {
         return new UnityEngine.Quaternion(quatIn.X, quatIn.Y, quatIn.Z, quatIn.W);
-    }
-
-    public static Vector3 ConvertPoint(PointENU pointENU)
-    {
-        return new Vector3(
-            Convert.ToSingle(pointENU.E), 
-            Convert.ToSingle(pointENU.U),
-            Convert.ToSingle(pointENU.N));
     }
 
     //*************************************************************************
@@ -1192,7 +1129,7 @@ public class ThingGameObject
             return;
 
         //find distance to 'self'
-        thing.DistanceToObserver = GetDistance(ThingsManager.Self, _thing);
+        thing.DistanceToObserver = Thing.GetDistance(ThingsManager.Self, _thing);
 
         //x = E, y = U, z = N
         _gameObject.transform.position = Vector3.Lerp(
@@ -1258,24 +1195,6 @@ public class ThingGameObject
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="hitpoint"></param>
-    /// <param name="active"></param>
-    //*************************************************************************
-    private void SetGimbalCameraGazeHitpoint(Vector3 hitpoint, bool active)
-    {
-        if (null == _gimbalCameraGazeHitpoint)
-            return;
-
-        _gimbalCameraGazeHitpoint._gameObject.SetActive(active);
-
-        if(active)
-            _gimbalCameraGazeHitpoint._gameObject.transform.position = hitpoint;
-    }
-
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
     /// <param name="gimbalCamera"></param>
     //*************************************************************************
     private void SetGimbalCamera(Camera gimbalCamera)
@@ -1291,7 +1210,7 @@ public class ThingGameObject
             gimbalCamera.transform.forward,
             out _gimbalCameraGazeTerrainIntersctionPoint);
 
-        SetGimbalCameraGazeHitpoint(
+        _gimbalCameraGazeHitpoint.Set(
             _gimbalCameraGazeTerrainIntersctionPoint,
             _haveGimbalCameraGazeTerrainIntersctionPoint);
     }
@@ -1300,6 +1219,7 @@ public class ThingGameObject
     /// <summary>
     /// 
     /// </summary>
+    /// <param name="orient"></param>
     //*************************************************************************
     private void SetGimbal(UnityEngine.Quaternion orient)
     {
@@ -1311,6 +1231,13 @@ public class ThingGameObject
             _gimbal.transform.localRotation = orient;
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="thingGameObject"></param>
+    /// <param name="maxApparentDistance"></param>
+    //*************************************************************************
     private void SetScale(ThingGameObject thingGameObject, float maxApparentDistance)
     {
         float haloScale = 1;
@@ -1326,6 +1253,14 @@ public class ThingGameObject
             }
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="gameObject"></param>
+    /// <param name="distanceToObserver"></param>
+    /// <param name="maxApparentDistance"></param>
+    //*************************************************************************
     private void SetScale(GameObject gameObject, float distanceToObserver, float maxApparentDistance)
     {
         float scale = 1;
@@ -1399,9 +1334,9 @@ public class ThingUavObject : ThingGameObject
         if (thing.Pose?.PointEnu != null)
         {
             if (_autoLandingPad) if (null == _landingPad)
-                _landingPad = AddLandingPad(ConvertPoint(thing.Pose.PointEnu));
+                _landingPad = AddLandingPad(PointENU.ToVector3(thing.Pose.PointEnu));
             if (_leaveBreadcrumbs)
-                _breadcrumbs.Add(AddBreadcrumb(ConvertPoint(thing.Pose.PointEnu)));
+                _breadcrumbs.Add(AddBreadcrumb(PointENU.ToVector3(thing.Pose.PointEnu)));
         }
     }
 }
@@ -1650,6 +1585,25 @@ public class ThingGazeHitpointObject : ThingGameObject
 
         _haloObject = new HaloObject(_gameObject, 6f);
     }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="hitpoint"></param>
+    /// <param name="active"></param>
+    //*************************************************************************
+    public void Set(Vector3 hitpoint, bool active)
+    {
+        if (null == base._gameObject)
+            return;
+
+        base._gameObject.SetActive(active);
+
+        if (active)
+            base._gameObject.transform.position = hitpoint;
+    }
+
 }
 
 #endregion //ThingGazeHitpointObject

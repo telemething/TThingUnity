@@ -102,6 +102,39 @@ public class Thing
         _role = role;
         _self = self;
     }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="from"></param>
+    /// <param name="to"></param>
+    /// <returns></returns>
+    //*************************************************************************
+
+    public static double GetDistance(Thing from, Thing to)
+    {
+        if (null == from)
+            return 0;
+
+        if (null == to)
+            return 0;
+
+        if (null == from.Pose)
+            return 0;
+
+        if (null == to.Pose)
+            return 0;
+
+        if (null == from.Pose.PointEnu)
+            return 0;
+
+        if (null == to.Pose.PointEnu)
+            return 0;
+
+        return PointENU.GetDistance(from.Pose.PointEnu, to.Pose.PointEnu);
+    }
+
 }
 
 //*************************************************************************

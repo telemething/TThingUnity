@@ -181,16 +181,48 @@ public class PointENU
     public double E;
     public double N;
     public double U;
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="from"></param>
+    /// <param name="to"></param>
+    /// <returns></returns>
+    //*************************************************************************
+
+    public static double GetDistance(PointENU from, PointENU to)
+    {
+        return Math.Sqrt(
+            Math.Pow((to.E - from.E), 2) +
+            Math.Pow((to.N - from.N), 2) +
+            Math.Pow((to.U - from.U), 2));
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="pointENU"></param>
+    /// <returns></returns>
+    //*************************************************************************
+    public static UnityEngine.Vector3 ToVector3(PointENU pointENU)
+    {
+        return new UnityEngine.Vector3(
+            Convert.ToSingle(pointENU.E),
+            Convert.ToSingle(pointENU.U),
+            Convert.ToSingle(pointENU.N));
+    }
 }
 
- /// ***************************************************************************
- /// ***************************************************************************
- /// <summary>
- /// 
- /// </summary>
- /// ***************************************************************************
- /// ***************************************************************************
-public class GpsUtils
+    /// ***************************************************************************
+    /// ***************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// ***************************************************************************
+    /// ***************************************************************************
+    public class GpsUtils
 {
     // WGS-84 geodetic constants
     const double a = 6378137.0; // WGS-84 Earth semimajor axis (m)
