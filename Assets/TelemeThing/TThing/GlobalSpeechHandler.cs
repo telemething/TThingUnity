@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
 using UnityEngine;
+using System.Threading;
 
 public class DroneMenuHandler : MonoBehaviour
 {
@@ -26,41 +27,6 @@ public class DroneMenuHandler : MonoBehaviour
     void Update()
     { }
 
-
-    /*public static List<GameObject> FindObjectsInScene(string objectName)
-    {
-        UnityEngine.SceneManagement.Scene activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-
-        GameObject[] rootObjects = activeScene.GetRootGameObjects();
-
-        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-
-        List<GameObject> objectsInScene = new List<GameObject>();
-
-        for (int i = 0; i < rootObjects.Length; i++)
-        {
-            if(objectName.Equals(rootObjects[i].name))
-                objectsInScene.Add(rootObjects[i]);
-        }
-
-        for (int i = 0; i < allObjects.Length; i++)
-        {
-            if (allObjects[i].transform.root)
-            {
-                for (int i2 = 0; i2 < rootObjects.Length; i2++)
-                {
-                    if (allObjects[i].transform.root == rootObjects[i2].transform && allObjects[i] != rootObjects[i2])
-                    {
-                        if (objectName.Equals(allObjects[i].name))
-                            objectsInScene.Add(allObjects[i]);
-                        break;
-                    }
-                }
-            }
-        }
-        return objectsInScene;
-    }*/
-
     //*************************************************************************
     /// <summary>
     /// 
@@ -75,10 +41,127 @@ public class DroneMenuHandler : MonoBehaviour
             return;
 
         dml[0]?.SetActive(trueToShow);
+    }
+}
 
+public class DeclinationSliderHandler : MonoBehaviour
+{
+    private static GameObject _declinationSlider = null;
+    private static bool _interacting = false;
+    private static float _sliderVal= 0f;
+    private static DeclinationSliderHandler _singleton = null;
+    private static Thread AdjustLoopThread = null;
+    private static Microsoft.MixedReality.Toolkit.UI.PinchSlider _slider = null;
 
-        //_droneMenu = GameObject.Find("DroneMenu");
-        //_droneMenu?.SetActive(trueToShow);
+    private static float _midVal = .5f;
+
+    //Microsoft.MixedReality.Toolkit.UI.PinchSlider _declinationSlider = null;
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    void Start()
+    {
+        _declinationSlider = GameObject.Find("DeclinationSlider");
+
+        //var hh = _declinationSlider as Microsoft.MixedReality.Toolkit.UI.PinchSlider;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    void Update()
+    {
+        if (_interacting)
+        {
+            //MixedRealityPlayspace.Rotation = Quaternion.Euler(Vector3.up * (float)pose.Orient.True);
+
+            var increment = _sliderVal * .1;
+
+            MixedRealityPlayspace.Rotation *= Quaternion.Euler(Vector3.up * (float)increment);
+        }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="trueToShow"></param>
+    //*************************************************************************
+    public static void ShowMenu(bool trueToShow)
+    {
+        var dml = Utils.FindObjectsInScene("DeclinationSlider");
+
+        if (dml.Count == 0)
+            return;
+
+        dml[0]?.SetActive(trueToShow);
+    }
+
+    /*private static IEnumerator AdjustLoop()
+    {
+        while (true)
+        {
+            yield return new WaitForEndOfFrame();
+            var increment = _sliderVal * .1;
+            MixedRealityPlayspace.Rotation *= Quaternion.Euler(Vector3.up * (float)increment);
+        }
+    }*/
+
+    private static void AdjustLoop()
+    {
+        while (_interacting)
+        {
+            //var increment = _sliderVal * .1f;
+            //MixedRealityPlayspace.Rotation *= Quaternion.Euler(Vector3.up * (float)increment);
+
+            ThingsManager.ManualDeclinationChange = (_sliderVal - _midVal) * .1f; ;
+
+            Thread.Sleep(20);
+        }
+
+        //set the slider back to middle after user lets go
+        if(null != _slider)
+            _slider.SliderValue = _midVal;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="trueToShow"></param>
+    //*************************************************************************
+    public static void InteractionStarted(bool trueIfStarted)
+    {
+        _interacting = trueIfStarted;
+
+        if (_interacting)
+        {
+            //Coroutine coroutine = MonoBehaviour.StartCoroutine("AdjustLoop");
+
+            if (null != AdjustLoopThread)
+                AdjustLoopThread.Abort();
+
+            AdjustLoopThread = new Thread(new ThreadStart(AdjustLoop));
+            AdjustLoopThread.Start();
+        }            
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="newValue"></param>
+    //*************************************************************************
+    public static void ValueUpdated(float newValue, 
+        Microsoft.MixedReality.Toolkit.UI.PinchSlider slider)
+    {
+        _sliderVal = newValue;
+        _slider = slider;
     }
 }
 

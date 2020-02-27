@@ -51,15 +51,15 @@ namespace T1
     }
 }
 
-    #region ThingsManager
+#region ThingsManager
 
-    //*************************************************************************
-    /// <summary>
-    /// 
-    /// </summary>
-    //*************************************************************************
+//*************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*************************************************************************
 
-    public class ThingsManager : MonoBehaviour
+public class ThingsManager : MonoBehaviour
 {
     //private T1.CLogger _cLogger;
 
@@ -86,7 +86,7 @@ namespace T1
     private ThingMotion _TM;
 
     //TODO * For now, terrain is just a flat plane with a point at 0,0,0
-    private static Plane _horizontalPlane = new Plane(Vector3.up, new Vector3(0,-4,0));
+    private static Plane _horizontalPlane = new Plane(Vector3.up, new Vector3(0, -4, 0));
 
     public static Thing Self
     {
@@ -156,8 +156,13 @@ namespace T1
             MainTerrain = _terrain;
         }
 
-        PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679,1000));
+        PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679, 1000));
     }
+
+    static float _manualDeclinationChange = 0f;
+
+    public static float ManualDeclinationChange
+        { set { _manualDeclinationChange = value; } }
 
     //*************************************************************************
     /// <summary>
@@ -210,6 +215,13 @@ namespace T1
                 _terrain.transform.position += 
                     new Vector3(0,_mainCameraAltitudeOverTerrain - _mainCameraAltitudeOverTerrainOffset, 0);
             }
+        }
+
+        if(0f != _manualDeclinationChange)
+        {
+            //rotate playspace by diff angle
+            MixedRealityPlayspace.Rotation *= Quaternion.Euler(Vector3.up * _manualDeclinationChange);
+            _manualDeclinationChange = 0f;
         }
     }
 

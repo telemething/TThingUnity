@@ -5,6 +5,8 @@ using Microsoft.MixedReality.Toolkit.Input;
 using TThingComLib;
 using TThingComLib.Messages;
 using UnityEngine;
+using Microsoft.MixedReality.Toolkit.UI;
+using UnityEngine.EventSystems;
 
 //*****************************************************************************
 /// <summary>
@@ -144,4 +146,58 @@ public class UICommandHandler : MonoBehaviour
     {
         DroneMenuHandler.ShowMenu(false);
     }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    public void SendCommand_ShowDroneMenu()
+    {
+        DroneMenuHandler.ShowMenu(true);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    public void SendCommand_HideCalibrateMenu()
+    {
+        DeclinationSliderHandler.ShowMenu(false);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    public void SendCommand_ShowCalibrateMenu()
+    {
+        DeclinationSliderHandler.ShowMenu(true);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    public void CalibrateSlider_Interaction(bool started)
+    {
+        DeclinationSliderHandler.InteractionStarted(started);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="eventData"></param>
+    //*************************************************************************
+    public void CalibrateSlider_Updated(SliderEventData eventData)
+    {
+        DeclinationSliderHandler.ValueUpdated(eventData.NewValue, eventData.Slider);
+    }
 }
+
+
+
