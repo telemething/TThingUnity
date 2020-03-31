@@ -63,9 +63,10 @@ public class ThingsManager : MonoBehaviour
 {
     //private T1.CLogger _cLogger;
 
-    public int Port = 45679;
+    public int Port = (int)AppSettings.App.ThingsManagerSettings.TelemetryPort.Value;
+    public string MyThingId = (string)AppSettings.App.ThingsManagerSettings.MyThingId.Value;
+
     public UnityEngine.UI.Text TextObject;
-    public string MyThingId = "self";
     private PointLatLonAlt _origin = null;
     private static Thing _self = null;
     private UnityEngine.UI.Text _infoTextLarge = null;
@@ -155,6 +156,9 @@ public class ThingsManager : MonoBehaviour
             _terrain = terrains[0];
             MainTerrain = _terrain;
         }
+
+        //allow raycast to hit underside of terrain mesh
+        Physics.queriesHitBackfaces = true;
 
         PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679, 1000));
     }
@@ -687,12 +691,12 @@ public class ThingsManager : MonoBehaviour
 public class ThingGameObject
 {
     // TODO * we need to adjust this dynamically to match transmission rate
-    private static float DefaultLerpTimeSpan = 1.0f;
+    private static float DefaultLerpTimeSpan = (float)AppSettings.App.GameObjectSettings.DefaultLerpTimeSpan.Value;
 
     // If true, will use a flat plane, otherwise will use a GEO plane
-    private bool _useFlatTerrain = false;
+    private bool _useFlatTerrain = (bool)AppSettings.App.GameObjectSettings.UseFlatTerrain.Value;
 
-    private float _haloScaleFactor = 16f;
+    private float _haloScaleFactor = (float)AppSettings.App.GameObjectSettings.HaloScaleFactor.Value;
 
     protected Thing _thing = null;
     protected GameObject _gameObject = null;
@@ -711,6 +715,11 @@ public class ThingGameObject
     protected Vector3 _lerpStartPosition;
     protected Vector3 _lerpEndPosition;
     protected float _lerpTimeSpan;
+
+    protected bool _keepAboveTerrain = (bool)AppSettings.App.GameObjectSettings.PlaceObjectsAboveTerrain.Value;
+    protected bool _keepAboveTerrainAltitudeAdjusted = false;
+    //protected float _keepAboveTerrainAltitudeAdjustement = 0;
+    protected Vector3 _displayPositionOffset = new Vector3(0,0,0);
 
     protected HoloToolkit.Unity.DirectionIndicator _directionIndicator;
 
@@ -822,6 +831,45 @@ public class ThingGameObject
         }
 
         return landingPad;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="objectPosition"></param>
+    /// <param name="height"></param>
+    /// <returns></returns>
+    //*************************************************************************
+
+    public bool HeightAboveTerrain(Vector3 objectPosition, out float height)
+    {
+        Vector3 terrainHitPosition;
+        height = 0;
+
+        //Find the spot on the terrain below the object.
+        //The arguments are the position of the UAV, and the down vector
+        if (FindRayTerrainIntersection(
+            objectPosition,
+            Vector3.down,
+            out terrainHitPosition))
+        {
+            height = objectPosition.y - terrainHitPosition.y;
+            return true;
+        }
+
+        //Find the spot on the terrain above the object.
+        //The arguments are the position of the UAV, and the up vector
+        if (FindRayTerrainIntersection(
+            objectPosition,
+            Vector3.up,
+            out terrainHitPosition))
+        {
+            height = objectPosition.y - terrainHitPosition.y;
+            return true;
+        }
+
+        return false;
     }
 
     //*************************************************************************
@@ -1145,7 +1193,7 @@ public class ThingGameObject
 
         //x = E, y = U, z = N
         _gameObject.transform.position = Vector3.Lerp(
-            _lerpStartPosition, _lerpEndPosition, lerpVal );
+            _lerpStartPosition, _lerpEndPosition, lerpVal) + _displayPositionOffset;
 
         _gameObject.transform.localRotation = ConvertQuat(_thing.Pose.Orient.Quat);
 
@@ -1286,6 +1334,38 @@ public class ThingGameObject
                     scale, scale, scale);
             }
     }
+
+    //*************************************************************************
+    /// <summary>
+    ///find offset of reported altitude from telemetry to altitude of terrain
+    ///in display. Corrects for mismatch of GPS to terrain elevations.
+    /// </summary>
+    /// <param name="thing"></param>
+    //*************************************************************************
+    public void SetAltitudeTerrainOffset(Thing thing)
+    {
+        //app config, are we even doing this?
+        if (!_keepAboveTerrain)
+            return;
+
+        //have we already done this?
+        if (_keepAboveTerrainAltitudeAdjusted)
+            return;
+
+        //do we have telemetry data yet?
+        if (!thing.Pose.IsEnuValid)
+            return;
+
+        if (HeightAboveTerrain(PointENU.ToVector3(thing.Pose.PointEnu), out var height))
+        {
+            //subtract height above displayed terrain from display offset
+            //_displayPositionOffset += new Vector3(0, -height, 0);
+            _displayPositionOffset += new Vector3(0, -height, 0);
+        }
+
+        //indicate that height has been adjusted
+        _keepAboveTerrainAltitudeAdjusted = true;
+    }
 }
 
 #endregion //ThingGameObject
@@ -1318,6 +1398,9 @@ public class ThingUavObject : ThingGameObject
 
     public ThingUavObject()
     {
+        _displayPositionOffset += new
+            Vector3(0, (float)AppSettings.App.UavObjectSettings.AltitudeOffset.Value, 0);
+
         //GameObject resourceObject = Resources.Load("ThingDrone") as GameObject;
         GameObject resourceObject = Resources.Load("UavObject") as GameObject;
         base._gameObject = UnityEngine.Object.Instantiate(resourceObject) as GameObject;
@@ -1341,12 +1424,14 @@ public class ThingUavObject : ThingGameObject
     //*************************************************************************
     public override void Set(Thing thing)
     {
+        SetAltitudeTerrainOffset(thing);
+
         base.Set(thing);
 
         if (thing.Pose?.PointEnu != null)
         {
             if (_autoLandingPad) if (null == _landingPad)
-                _landingPad = AddLandingPad(PointENU.ToVector3(thing.Pose.PointEnu));
+                    _landingPad = AddLandingPad(PointENU.ToVector3(thing.Pose.PointEnu));
             if (_leaveBreadcrumbs)
                 _breadcrumbs.Add(AddBreadcrumb(PointENU.ToVector3(thing.Pose.PointEnu)));
         }

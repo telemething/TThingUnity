@@ -23,6 +23,7 @@ public class ThingPose
     public uint tow;
 
     private bool _isNewData = false;
+    private bool _isEnuValid = false;
     private bool calculateEnu = false;
     private PointENU _pointEnu = new PointENU();
     private PointLatLonAlt _pointGeo = new PointLatLonAlt();
@@ -31,6 +32,10 @@ public class ThingPose
     private PointLatLonAlt _origin = new PointLatLonAlt();
     private PointGeoStatusEnum _pointGeoStatus = PointGeoStatusEnum.UnInit;
     private PointGeoUsableEnum _pointGeoUsable = PointGeoUsableEnum.UnInit;
+
+    private double _declination = 15.5;
+    bool _gotOrientTrue = false;
+    bool _gotOrientMag = false;
 
     public PointLatLonAlt Origin
     {
@@ -51,6 +56,11 @@ public class ThingPose
     public bool IsNewData
     {
         get { return _isNewData; }
+    }
+
+    public bool IsEnuValid
+    {
+        get { return _isEnuValid; }
     }
 
     //*************************************************************************
@@ -105,7 +115,10 @@ public class ThingPose
     private void CalculateEnu(PointLatLonAlt pointGeo, PointLatLonAlt pointOrigin)
     {
         if (calculateEnu)
+        {
             _pointEnu = GeoLib.GpsUtils.GeodeticToEnu(_pointGeo, _origin);
+            _isEnuValid = true;
+        }
         else
         {
             _pointEnu.E = 0;
@@ -113,10 +126,6 @@ public class ThingPose
             _pointEnu.U = 0;
         }
     }
-
-    private double _declination = 15.5;
-    bool _gotOrientTrue = false;
-    bool _gotOrientMag = false;
 
     //*************************************************************************
     /// <summary>
