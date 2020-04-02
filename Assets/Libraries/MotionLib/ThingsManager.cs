@@ -88,10 +88,23 @@ public class ThingsManager : MonoBehaviour
     public enum TerrainStateEnum { uninit, placing, placedLatLon, placed }
     private TerrainStateEnum _terrainState = TerrainStateEnum.uninit;
 
+    int zoomLevel = (int)AppSettings.App.TerrainSettings.TerrainZoomLevel.Value;
+    int tilesPerSide = (int)AppSettings.App.TerrainSettings.TerrainTilesPerSide.Value;
+
     private ThingMotion _TM;
 
     //TODO * For now, terrain is just a flat plane with a point at 0,0,0
     private static Plane _horizontalPlane = new Plane(Vector3.up, new Vector3(0, -4, 0));
+
+    public enum CompassAlignmentStatusEnum { Unaligned, Aligning, Showing, Aligned, Broken }
+    CompassAlignmentStatusEnum _compassAlignmentStatus = CompassAlignmentStatusEnum.Unaligned;
+    Stopwatch _compassAlignementTimer = new Stopwatch();
+    long _compassAlignementTimeSpanMs = 5000;
+    long _compassAlignementShowingTimeSpanMs = 2000;
+    float _compassAlignementCameraStartingRotation = 0;
+    float _compassAlignementCameraMaxAllowedRotation = 2;
+    double _compassAlignementCompassReadingSum = 0;
+    int _compassAlignementCompassReadingCount = 0;
 
     public static Thing Self
     {
@@ -163,49 +176,6 @@ public class ThingsManager : MonoBehaviour
 
         //allow raycast to hit underside of terrain mesh
         Physics.queriesHitBackfaces = true;
-
-        //PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679, 1000));
-
-        //WaitAndPlace();
-    }
-
-    void WaitAndPlace()
-    {
-        PointLatLonAlt selfCoords = null;
-        Thing selfThing = null;
-
-        while (true)
-        {
-            var things = _TM.GetThings();
-
-            things?.ForEach(thing =>
-            {
-                try
-                {
-                    if (null == thing)
-                        return;
-                    if (thing.Self == Thing.SelfEnum.Self)
-                        selfThing = thing;
-                }
-                catch (Exception ex)
-                {
-                    var ff = ex.Message;
-                    return;
-                }
-            });
-
-            if(null != selfThing)
-            {
-                if (selfThing.Pose.PointGeoStatus == ThingPose.PointGeoStatusEnum.Good)
-                {
-                    selfCoords = selfThing.Pose.PointGeo;
-                    break;
-                }
-            }
-        }
-            
-        if (null != selfCoords)
-            PlaceTerrain(selfCoords);
     }
 
     static float _manualDeclinationChange = 0f;
@@ -510,16 +480,6 @@ public class ThingsManager : MonoBehaviour
         _TM.Origin = _origin;
     }
 
-    public enum CompassAlignmentStatusEnum { Unaligned, Aligning, Showing, Aligned, Broken }
-    CompassAlignmentStatusEnum _compassAlignmentStatus = CompassAlignmentStatusEnum.Unaligned;
-    Stopwatch _compassAlignementTimer = new Stopwatch();
-    long _compassAlignementTimeSpanMs = 5000;
-    long _compassAlignementShowingTimeSpanMs = 2000;
-    float _compassAlignementCameraStartingRotation = 0;
-    float _compassAlignementCameraMaxAllowedRotation = 2;
-    double _compassAlignementCompassReadingSum = 0;
-    int _compassAlignementCompassReadingCount = 0;
-
     //*************************************************************************
     /// <summary>
     ///We translate objects from real world geo coords to local game coords
@@ -544,7 +504,8 @@ public class ThingsManager : MonoBehaviour
 
             case CompassAlignmentStatusEnum.Showing:
 
-                if (_compassAlignementShowingTimeSpanMs < _compassAlignementTimer.ElapsedMilliseconds)
+                if (_compassAlignementShowingTimeSpanMs < 
+                    _compassAlignementTimer.ElapsedMilliseconds)
                 {
                     _infoTextLarge.text = "";
                     _compassAlignmentStatus = CompassAlignmentStatusEnum.Aligned;
@@ -572,11 +533,14 @@ public class ThingsManager : MonoBehaviour
                     _infoTextLarge.text = $"Aligning Orientation. Hold Still\nMag: {Math.Round(pose.Orient.True, 2)}\nCam: {Math.Round(cameraOrientation.eulerAngles.y, 2)}";
 
                     //if not still, start over
-                    if(_compassAlignementCameraMaxAllowedRotation < Math.Abs(cameraOrientation.eulerAngles.y - _compassAlignementCameraStartingRotation))
+                    if(_compassAlignementCameraMaxAllowedRotation < 
+                        Math.Abs(cameraOrientation.eulerAngles.y - 
+                        _compassAlignementCameraStartingRotation))
                     {
                         _compassAlignementCompassReadingSum = 0;
                         _compassAlignementCompassReadingCount = 0;
-                        _compassAlignementCameraStartingRotation = Camera.main.transform.rotation.eulerAngles.y;
+                        _compassAlignementCameraStartingRotation = 
+                            Camera.main.transform.rotation.eulerAngles.y;
                         _compassAlignementTimer.Restart();
                         return;
                     }
@@ -589,7 +553,8 @@ public class ThingsManager : MonoBehaviour
                 //Enough still time has passed
 
                 //find average of mag readings taken during cal time
-                var MagAngleAvg = (float)(_compassAlignementCompassReadingSum / (float)_compassAlignementCompassReadingCount);
+                var MagAngleAvg = (float)(_compassAlignementCompassReadingSum / 
+                    (float)_compassAlignementCompassReadingCount);
 
                 //convert to quat
                 compassOrientation = Quaternion.Euler(Vector3.up * MagAngleAvg);
@@ -622,7 +587,7 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Set values of self object, once per frame update
     /// </summary>
     /// <param name="thing"></param>
     //*************************************************************************
@@ -631,13 +596,15 @@ public class ThingsManager : MonoBehaviour
         if (_terrainState == TerrainStateEnum.placedLatLon)
         {
             _gotMainCameraAltitudeOverTerrain =
-                HeightAboveTerrain(Camera.main.transform.position, out _mainCameraAltitudeOverTerrain);
+                HeightAboveTerrain(Camera.main.transform.position, 
+                out _mainCameraAltitudeOverTerrain);
 
             if (_gotMainCameraAltitudeOverTerrain)
             {
                 //move terrain by offset
                 _terrain.transform.position +=
-                    new Vector3(0, _mainCameraAltitudeOverTerrain - _mainCameraAltitudeOverTerrainOffset, 0);
+                    new Vector3(0, _mainCameraAltitudeOverTerrain - 
+                    _mainCameraAltitudeOverTerrainOffset, 0);
             }
 
             _terrainState = TerrainStateEnum.placed;
@@ -654,7 +621,9 @@ public class ThingsManager : MonoBehaviour
                     _terrainState = TerrainStateEnum.placing;
 
                     //place the terrain, centered around my position
-                    PlaceTerrain(new PointLatLonAlt(thing.Pose.PointGeo.Lat, thing.Pose.PointGeo.Lon, thing.Pose.PointGeo.Alt + 8f));
+                    PlaceTerrain(new PointLatLonAlt(thing.Pose.PointGeo.Lat, 
+                        thing.Pose.PointGeo.Lon, thing.Pose.PointGeo.Alt + 1000f),
+                        zoomLevel, tilesPerSide);
 
                     _terrainState = TerrainStateEnum.placedLatLon;
                 }
@@ -671,7 +640,7 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Set values of non self objects, once per frame update
     /// </summary>
     /// <param name="thing"></param>
     //*************************************************************************
@@ -689,7 +658,7 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Make sure frustum contains all objects, adjust accordingly
     /// </summary>
     /// <param name="distance"></param>
     //*************************************************************************
@@ -712,11 +681,15 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Fetch and dispaly terrain
     /// </summary>
-    /// <param name="trueToShow"></param>
+    /// <param name="trueToShow">Lat lon coords at center of tiles to fetch</param>
+    /// <param name="zoomLevel">Zoom levelof tiles to fetch</param>
+    /// <param name="tilesPerSide">Number of tiles per edge, total number of
+    /// tiles to fetch and display = (tilesPerSide+1)^2</param>
     //*************************************************************************
-    public static void PlaceTerrain(PointLatLonAlt coords)
+    public static void PlaceTerrain(PointLatLonAlt coords,
+        int zoomLevel, int tilesPerSide)
     {
         var terrains = Utils.FindObjectsInScene("Terrain");
 
@@ -732,7 +705,7 @@ public class ThingsManager : MonoBehaviour
         var size = mb.MapSize;   //* TODO * make UI adjustable
 
         //fetch and place the map
-        mb.ShowMap((float)coords.Lat, (float)coords.Lon, zoom, (int)size);
+        mb.ShowMap((float)coords.Lat, (float)coords.Lon, zoomLevel, (int)tilesPerSide);
 
         Camera.main.farClipPlane = Math.Max(
             Camera.main.farClipPlane, mb.MapTotal3DDiagonalLength/2);
@@ -746,22 +719,11 @@ public class ThingsManager : MonoBehaviour
 
         //move the map by the offset
         terrains[0].transform.position += PointENU.ToVector3(offset);
-
-        //Find the spot on the terrain below the UAV.
-        //The arguments are the position of the UAV, and the down vector
-        /*if (FindRayTerrainIntersection(
-            uavPosition,
-            Vector3.down,
-            out var padPosition))
-        {
-            breadcrumb = new ThingBreadcrumbObject();
-            breadcrumb._gameObject.transform.position = padPosition;
-        }*/
     }
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Display or hide terrain
     /// </summary>
     /// <param name="trueToShow"></param>
     //*************************************************************************

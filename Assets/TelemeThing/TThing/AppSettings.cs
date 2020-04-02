@@ -35,6 +35,13 @@ public class AppSettings
             MainCameraAltitudeOverTerrainOffset = new AppSetting("MainCameraAltitudeOverTerrainOffset", 2.0f, "MainCameraAltitudeOverTerrainOffset"),
         };
 
+    public TerrainSettings TerrainSettings =
+        new TerrainSettings()
+        {
+            TerrainZoomLevel = new AppSetting("TerrainZoomLevel", 18, "The zoom level fetched from the tile server"),
+            TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 9, "The number of tiles per edge (-1 because center tile)"),
+        };
+
     /// <summary>
     /// Fetch the singleton
     /// </summary>
@@ -101,5 +108,17 @@ public class SelfSettings
 
     public AppSetting MainCameraAltitudeOverTerrainOffset { get; set; }
 }
+
+public class TerrainSettings
+{
+    public AppSetting TerrainZoomLevel { get; set; }
+
+    public AppSetting TerrainTilesPerSide { get; set; }
+}
+
+
+
+
+
 
 
