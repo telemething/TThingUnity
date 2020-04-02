@@ -64,7 +64,7 @@ public class ThingsManager : MonoBehaviour
     //private T1.CLogger _cLogger;
 
     public int Port = (int)AppSettings.App.ThingsManagerSettings.TelemetryPort.Value;
-    public string MyThingId = (string)AppSettings.App.ThingsManagerSettings.MyThingId.Value;
+    public string MyThingId = (string)AppSettings.App.SelfSettings.MyThingId.Value;
 
     public UnityEngine.UI.Text TextObject;
     private PointLatLonAlt _origin = null;
@@ -82,7 +82,11 @@ public class ThingsManager : MonoBehaviour
 
     private bool _gotMainCameraAltitudeOverTerrain = false;
     private float _mainCameraAltitudeOverTerrain = 0f;
-    private float _mainCameraAltitudeOverTerrainOffset = 4f;
+    private float _mainCameraAltitudeOverTerrainOffset = 
+        (float)AppSettings.App.SelfSettings.MainCameraAltitudeOverTerrainOffset.Value;
+
+    public enum TerrainStateEnum { uninit, placing, placedLatLon, placed }
+    private TerrainStateEnum _terrainState = TerrainStateEnum.uninit;
 
     private ThingMotion _TM;
 
@@ -160,7 +164,48 @@ public class ThingsManager : MonoBehaviour
         //allow raycast to hit underside of terrain mesh
         Physics.queriesHitBackfaces = true;
 
-        PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679, 1000));
+        //PlaceTerrain(new PointLatLonAlt(47.46834, -121.7679, 1000));
+
+        //WaitAndPlace();
+    }
+
+    void WaitAndPlace()
+    {
+        PointLatLonAlt selfCoords = null;
+        Thing selfThing = null;
+
+        while (true)
+        {
+            var things = _TM.GetThings();
+
+            things?.ForEach(thing =>
+            {
+                try
+                {
+                    if (null == thing)
+                        return;
+                    if (thing.Self == Thing.SelfEnum.Self)
+                        selfThing = thing;
+                }
+                catch (Exception ex)
+                {
+                    var ff = ex.Message;
+                    return;
+                }
+            });
+
+            if(null != selfThing)
+            {
+                if (selfThing.Pose.PointGeoStatus == ThingPose.PointGeoStatusEnum.Good)
+                {
+                    selfCoords = selfThing.Pose.PointGeo;
+                    break;
+                }
+            }
+        }
+            
+        if (null != selfCoords)
+            PlaceTerrain(selfCoords);
     }
 
     static float _manualDeclinationChange = 0f;
@@ -208,19 +253,6 @@ public class ThingsManager : MonoBehaviour
             }
         });
 
-        if (!_gotMainCameraAltitudeOverTerrain)
-        {
-            _gotMainCameraAltitudeOverTerrain =
-                TryGetAltitudeOverTerrain(out _mainCameraAltitudeOverTerrain);
-
-            if (_gotMainCameraAltitudeOverTerrain)
-            {
-                //move terrain by offset
-                _terrain.transform.position += 
-                    new Vector3(0,_mainCameraAltitudeOverTerrain - _mainCameraAltitudeOverTerrainOffset, 0);
-            }
-        }
-
         if(0f != _manualDeclinationChange)
         {
             //rotate playspace by diff angle
@@ -239,6 +271,7 @@ public class ThingsManager : MonoBehaviour
     bool TryGetAltitudeOverTerrain(out float altitude)
     {
         altitude = 0;
+        RaycastHit hit;
 
         if (null == _terrain)
             return false;
@@ -247,7 +280,7 @@ public class ThingsManager : MonoBehaviour
 
         // look down
         if (Physics.Raycast(Camera.main.transform.position, Vector3.down,
-            out RaycastHit hit, Mathf.Infinity, layerMask))
+            out hit, Mathf.Infinity, layerMask))
         {
             altitude = hit.distance;
             return true;
@@ -257,7 +290,67 @@ public class ThingsManager : MonoBehaviour
         if (Physics.Raycast(Camera.main.transform.position, Vector3.up,
             out hit, Mathf.Infinity, layerMask))
         {
-            altitude = hit.distance;
+            altitude = -hit.distance;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool FindRayTerrainIntersection(Vector3 origin,
+    Vector3 direction, out Vector3 intersectionPoint)
+    {
+        Ray ray = new Ray(origin, direction);
+
+        /*if (_useFlatTerrain)
+        {
+            //Use a terrain which is just a flat plane with a point at 0,0,0
+            if (ThingsManager.HorizontalPlane.Raycast(ray, out var distance))
+            {
+                intersectionPoint = ray.GetPoint(distance);
+                return true;
+            }
+        }
+        else*/
+        {
+            //Use the terrain which was built from GEO data
+            int layerMask = 1 << ThingsManager.MainTerrain.layer;
+            if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
+            {
+                intersectionPoint = hit.point;
+                return true;
+            }
+        }
+
+        intersectionPoint = new Vector3(0, 0, 0);
+        return false;
+    }
+
+
+    public bool HeightAboveTerrain(Vector3 objectPosition, out float height)
+    {
+        Vector3 terrainHitPosition;
+        height = 0;
+
+        //Find the spot on the terrain below the object.
+        //The arguments are the position of the UAV, and the down vector
+        if (FindRayTerrainIntersection(
+            objectPosition,
+            Vector3.down,
+            out terrainHitPosition))
+        {
+            height = objectPosition.y - terrainHitPosition.y;
+            return true;
+        }
+
+        //Find the spot on the terrain above the object.
+        //The arguments are the position of the UAV, and the up vector
+        if (FindRayTerrainIntersection(
+            objectPosition,
+            Vector3.up,
+            out terrainHitPosition))
+        {
+            height = objectPosition.y - terrainHitPosition.y;
             return true;
         }
 
@@ -535,10 +628,37 @@ public class ThingsManager : MonoBehaviour
     //*************************************************************************
     void SetSelf(Thing thing)
     {
+        if (_terrainState == TerrainStateEnum.placedLatLon)
+        {
+            _gotMainCameraAltitudeOverTerrain =
+                HeightAboveTerrain(Camera.main.transform.position, out _mainCameraAltitudeOverTerrain);
+
+            if (_gotMainCameraAltitudeOverTerrain)
+            {
+                //move terrain by offset
+                _terrain.transform.position +=
+                    new Vector3(0, _mainCameraAltitudeOverTerrain - _mainCameraAltitudeOverTerrainOffset, 0);
+            }
+
+            _terrainState = TerrainStateEnum.placed;
+        }
+
         // set the origin to the first reported location of self
-        if (null == _origin) 
-            if(thing.Pose.PointGeoUsable == ThingPose.PointGeoUsableEnum.Yes)
+        if (null == _origin)
+            if (thing.Pose.PointGeoUsable == ThingPose.PointGeoUsableEnum.Yes)
+            {
                 SetOrigin(thing.Pose);
+
+                if (_terrainState == TerrainStateEnum.uninit)
+                {
+                    _terrainState = TerrainStateEnum.placing;
+
+                    //place the terrain, centered around my position
+                    PlaceTerrain(new PointLatLonAlt(thing.Pose.PointGeo.Lat, thing.Pose.PointGeo.Lon, thing.Pose.PointGeo.Alt + 8f));
+
+                    _terrainState = TerrainStateEnum.placedLatLon;
+                }
+            }
 
         if (null == thing.GameObjectObject)
             thing.GameObjectObject = ThingGameObject.CreateGameObject(thing);
@@ -557,6 +677,10 @@ public class ThingsManager : MonoBehaviour
     //*************************************************************************
     void SetOther(Thing thing)
     {
+        //dont do anything if we don't yet have a terrain
+        if (_terrainState != TerrainStateEnum.placed)
+            return;
+
         if (null == thing.GameObjectObject)
             thing.GameObjectObject = ThingGameObject.CreateGameObject(thing);
         else
@@ -623,34 +747,9 @@ public class ThingsManager : MonoBehaviour
         //move the map by the offset
         terrains[0].transform.position += PointENU.ToVector3(offset);
 
-        /*int layerMask = 1 << terrains[0].layer;
-        RaycastHit hit;
-
-        // Does the ray intersect any objects which are in the player layer.
-        if (Physics.Raycast(Camera.main.transform.position, Vector3.down, out hit, Mathf.Infinity, layerMask))
-        {
-            var hh1 = hit.distance;
-        }
-
-        if (Physics.Raycast(Camera.main.transform.position, Vector3.up, out hit, Mathf.Infinity, layerMask))
-        {
-            var hh2 = hit.distance;
-        }*/
-
-        //find the height of the terrain below me *Assumes I am standing on the ground
-
-        /*Ray ray = new Ray(coords, Vector3.down);
-
-        if (ThingsManager.HorizontalPlane.Raycast(ray, out var distance))
-        {
-            intersectionPoint = ray.GetPoint(distance);
-            return true;
-        }
-
-
         //Find the spot on the terrain below the UAV.
         //The arguments are the position of the UAV, and the down vector
-        if (FindRayTerrainIntersection(
+        /*if (FindRayTerrainIntersection(
             uavPosition,
             Vector3.down,
             out var padPosition))
@@ -827,7 +926,7 @@ public class ThingGameObject
             out var padPosition))
         {
             landingPad = new ThingLandingPadObject();
-            landingPad._gameObject.transform.position = padPosition;
+            landingPad._gameObject.transform.position = padPosition + new Vector3(0,.3f,0);
         }
 
         return landingPad;
@@ -1430,10 +1529,10 @@ public class ThingUavObject : ThingGameObject
 
         if (thing.Pose?.PointEnu != null)
         {
-            if (_autoLandingPad) if (null == _landingPad)
-                    _landingPad = AddLandingPad(PointENU.ToVector3(thing.Pose.PointEnu));
-            if (_leaveBreadcrumbs)
-                _breadcrumbs.Add(AddBreadcrumb(PointENU.ToVector3(thing.Pose.PointEnu)));
+            if (_autoLandingPad) if (null == _landingPad) if(thing.Pose.IsEnuValid)
+                _landingPad = AddLandingPad(PointENU.ToVector3(thing.Pose.PointEnu) + _displayPositionOffset);
+            if (_leaveBreadcrumbs) if (thing.Pose.IsEnuValid)
+                _breadcrumbs.Add(AddBreadcrumb(PointENU.ToVector3(thing.Pose.PointEnu) + _displayPositionOffset));
         }
     }
 }
@@ -1641,6 +1740,20 @@ public class ThingPersonObject : ThingGameObject
 
         //TODO * Do not render for now
     }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="thing"></param>
+    //*************************************************************************
+    /*public override void Set(Thing thing)
+    {
+        SetAltitudeTerrainOffset(thing);
+
+        base.Set(thing);
+    }*/
+
 }
 
 #endregion //ThingPersonObject

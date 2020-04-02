@@ -10,8 +10,7 @@ public class AppSettings
     public ThingsManagerSettings ThingsManagerSettings =
         new ThingsManagerSettings()
         {
-            TelemetryPort = new AppSetting("TelemetryPort", 45679, "The UDP port on which to monitor telemetry messages"),
-            MyThingId = new AppSetting("MyThingId", "self", "The ID of the self object in telemetry messages"),
+            TelemetryPort = new AppSetting("TelemetryPort", 45679, "The UDP port on which to monitor telemetry messages")
         };
 
     public GameObjectSettings GameObjectSettings =
@@ -26,7 +25,14 @@ public class AppSettings
     public UavObjectSettings UavObjectSettings =
         new UavObjectSettings()
         {
-            AltitudeOffset = new AppSetting("AltitudeOffset", 1.0f, "AltitudeOffset"),
+            AltitudeOffset = new AppSetting("AltitudeOffset", 2.0f, "AltitudeOffset"),
+        };
+
+    public SelfSettings SelfSettings =
+        new SelfSettings()
+        {
+            MyThingId = new AppSetting("MyThingId", "self", "The ID of the self object in telemetry messages"),
+            MainCameraAltitudeOverTerrainOffset = new AppSetting("MainCameraAltitudeOverTerrainOffset", 2.0f, "MainCameraAltitudeOverTerrainOffset"),
         };
 
     /// <summary>
@@ -70,8 +76,6 @@ public class AppSetting
 public class ThingsManagerSettings
 {
     public AppSetting TelemetryPort { get; set; }
-
-    public AppSetting MyThingId { get; set; }
 }
 
 public class GameObjectSettings
@@ -89,6 +93,13 @@ public class GameObjectSettings
 public class UavObjectSettings
 {
     public AppSetting AltitudeOffset { get; set; }
+}
+
+public class SelfSettings
+{
+    public AppSetting MyThingId { get; set; }
+
+    public AppSetting MainCameraAltitudeOverTerrainOffset { get; set; }
 }
 
 
