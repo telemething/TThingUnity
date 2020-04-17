@@ -399,7 +399,19 @@ public class ThingMotion
             T1.CLogger.LogThis("ProcessPoseRecords() : " + text);
 
             var message = TThingComLib.Messages.Message.DeSerialize(text);
-            _things.SetTelem(message);
+
+            switch(message.Type)
+            {
+                case TThingComLib.Messages.MessageTypeEnum.Telem:
+                    _things.SetTelem(message);
+                    break;
+                case TThingComLib.Messages.MessageTypeEnum.Command:
+                    _things.SetTelem(message);
+                    break;
+                case TThingComLib.Messages.MessageTypeEnum.Config:
+                    AppSettings.App.ProcessMessage(message);
+                    break;
+            }
         }
         catch (Exception e)
         {

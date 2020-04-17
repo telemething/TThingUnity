@@ -147,7 +147,7 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Called by Unity engine at start
     /// </summary>
     //*************************************************************************
 
@@ -176,6 +176,8 @@ public class ThingsManager : MonoBehaviour
 
         //allow raycast to hit underside of terrain mesh
         Physics.queriesHitBackfaces = true;
+
+        var ser = AppSettings.App.Serialize();
     }
 
     static float _manualDeclinationChange = 0f;
@@ -185,7 +187,7 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Calledby Unity engine once per frame update
     /// </summary>
     //*************************************************************************
     void Update()
@@ -233,40 +235,13 @@ public class ThingsManager : MonoBehaviour
 
     //*********************************************************************
     /// <summary>
-    /// 
+    /// Find point on terrain of intersection of given ray
     /// </summary>
-    /// <param name="altitude"></param>
+    /// <param name="origin"></param>
+    /// <param name="direction"></param>
+    /// <param name="intersectionPoint"></param>
     /// <returns></returns>
     //*********************************************************************
-    bool TryGetAltitudeOverTerrain(out float altitude)
-    {
-        altitude = 0;
-        RaycastHit hit;
-
-        if (null == _terrain)
-            return false;
-
-        int layerMask = 1 << _terrain.layer;
-
-        // look down
-        if (Physics.Raycast(Camera.main.transform.position, Vector3.down,
-            out hit, Mathf.Infinity, layerMask))
-        {
-            altitude = hit.distance;
-            return true;
-        }
-
-        // look up
-        if (Physics.Raycast(Camera.main.transform.position, Vector3.up,
-            out hit, Mathf.Infinity, layerMask))
-        {
-            altitude = -hit.distance;
-            return true;
-        }
-
-        return false;
-    }
-
     private bool FindRayTerrainIntersection(Vector3 origin,
     Vector3 direction, out Vector3 intersectionPoint)
     {
@@ -296,7 +271,14 @@ public class ThingsManager : MonoBehaviour
         return false;
     }
 
-
+    //*********************************************************************
+    /// <summary>
+    /// Find height of object above terrain, returns negative if below 
+    /// </summary>
+    /// <param name="objectPosition"></param>
+    /// <param name="height"></param>
+    /// <returns></returns>
+    //*********************************************************************
     public bool HeightAboveTerrain(Vector3 objectPosition, out float height)
     {
         Vector3 terrainHitPosition;
@@ -329,7 +311,7 @@ public class ThingsManager : MonoBehaviour
 
     //*********************************************************************
     /// <summary>
-    /// 
+    /// Fetch file data
     /// </summary>
     /// <param name="fileName"></param>
     /// <returns></returns>
@@ -354,7 +336,7 @@ public class ThingsManager : MonoBehaviour
 
     //*********************************************************************
     /// <summary>
-    /// 
+    /// Decode LERC data
     /// </summary>
     /// <param name="encodedData"></param>
     /// <returns></returns>
@@ -439,7 +421,11 @@ public class ThingsManager : MonoBehaviour
         }
     }
 
-
+    //*********************************************************************
+    /// <summary>
+    /// Fetch and decode LERC data from file
+    /// </summary>
+    //*********************************************************************
     void TestLerc()
     {
         try
@@ -470,7 +456,9 @@ public class ThingsManager : MonoBehaviour
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Set geo coords of origin. Origin has fixed ENU coords of (0,0,0). All
+    /// other objects will have ENU coords set selative to the goe coords of
+    /// the origin.
     /// </summary>
     /// <param name="pose"></param>
     //*************************************************************************

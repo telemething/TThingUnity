@@ -56,6 +56,38 @@ namespace RosSharp.RosBridgeClient.Messages.Test
 
 namespace TThingComLib.Messages
 {
+    public enum MessageTypeEnum
+    { Telem, Command, Config }
+    public enum NetworkTypeEnum
+    { Unknown, TCP, UDP, WsAPI }
+    public enum ServiceTypeEnum
+    { Unknown, SelfTelem, GroundStation, Config, GeoTile }
+    public enum ServiceRoleEnum
+    { Unknown, Client, Server, Both }
+    public enum CommandIdEnum
+    { StartMission, StopDrone, ReturnHome, LandDrone }
+    public enum MissionStateEnum
+    { Unknown, None, Sending, Sent, Starting, Underway, Failed, Completed }
+    public enum LandedStateEnum
+    { Unknown, Grounded, Liftoff, Flying, Landing, Failed }
+
+    public class NetworkService
+    {
+        public string URL { get; set; }
+        public NetworkTypeEnum NetworkType { get; set; }
+        public ServiceTypeEnum ServiceType { get; set; }
+        public ServiceRoleEnum ServiceRole { get; set; }
+
+        public NetworkService(string url, NetworkTypeEnum networkType,
+            ServiceTypeEnum serviceType, ServiceRoleEnum serviceRole)
+        {
+            URL = url;
+            NetworkType = networkType;
+            ServiceType = serviceType;
+            ServiceRole = serviceRole;
+        }
+    }
+
     public class Coord
     {
         public double Lat { get; set; }
@@ -118,9 +150,6 @@ namespace TThingComLib.Messages
         public List<string> Values { get; set; }
     }
 
-    public enum CommandIdEnum
-    { StartMission, StopDrone, ReturnHome, LandDrone }
-
     public class Command
     {
         public TThingComLib.Messages.CommandIdEnum CommandId { get; set; }
@@ -141,9 +170,6 @@ namespace TThingComLib.Messages
         }
     }
 
-    public enum MessageTypeEnum
-    { Telem, Command }
-
     public class Message
     {
         public TThingComLib.Messages.MessageTypeEnum Type { get; set; }
@@ -153,8 +179,10 @@ namespace TThingComLib.Messages
         public TThingComLib.Messages.Coord Coord { get; set; }
         public TThingComLib.Messages.Orient Orient { get; set; }
         public TThingComLib.Messages.Gimbal Gimbal { get; set; }
-
+        public TThingComLib.Messages.MissionStateEnum MissionState { get; set; }
+        public TThingComLib.Messages.LandedStateEnum LandedState { get; set; }
         public List<TThingComLib.Messages.Command> Commands { get; set; }
+        public List<TThingComLib.Messages.NetworkService> NetworkServices { get; set; }
 
         public Message()
         { }
