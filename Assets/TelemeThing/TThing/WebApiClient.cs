@@ -33,6 +33,17 @@ using Newtonsoft.Json.Serialization;
 
 namespace WebApiLib
 {
+    //*************************************************************************
+    /// <summary>
+    /// A collection of app specific WebApi method names
+    /// </summary>
+    //*************************************************************************
+    public class WebApiMethodNames
+    {
+        public static string Settings_RegisterRemoteSettings { get; } = 
+            "Settings.RegisterRemoteSettings";
+    }
+
     #region Message
 
     public enum MessageTypeEnum { unknown, request, response, connection }
@@ -48,6 +59,10 @@ namespace WebApiLib
         public string Name { set; get; }
         public object Value { set; get; }
         public Type Type { set; get; }
+
+        public Argument()
+        {
+        }
 
         public Argument(string name, object value)
         {
@@ -71,6 +86,10 @@ namespace WebApiLib
         public EventTypeEnum EventType { set; get; }
 
         public List<Argument> Arguments { set; get; }
+
+        public ApiEvent()
+        {
+        }
 
         public ApiEvent(EventTypeEnum eventType, List<Argument> arguments)
         {
@@ -128,6 +147,10 @@ namespace WebApiLib
         public string MethodName { set; get; }
 
         public List<Argument> Arguments { set; get; }
+
+        public Request()
+        {
+        }
 
         public Request(string methodName, List<Argument> arguments)
         {
@@ -319,10 +342,69 @@ namespace WebApiLib
     //*************************************************************************
     public class WebApiCore
     {
+        //signature of request handling methods
+        public delegate List<WebApiLib.Argument> MethodCallback(List<WebApiLib.Argument> args);
+
+        //signature of event handling methods
+        public delegate void EventCallback(WebApiLib.ApiEvent apiEvent);
+
+        //list of request handling methods
+        Dictionary<string, MethodCallback> _methodList = new Dictionary<string, MethodCallback>();
+
+        //list of event handling methods
+        protected List<EventCallback> _eventCallbackList = new List<EventCallback>();
+
         protected EventWaitHandle _gotNewResponse = new EventWaitHandle(false, EventResetMode.ManualReset);
         protected Queue<Request> RequestsReceived = new Queue<Request>();
         protected Queue<Response> ResponsesReceived = new Queue<Response>();
         protected bool _connectedToApi = false;
+        protected WebServerLib.TTWebSocketClient _client = null;
+
+        //*************************************************************************
+        /// <summary>
+        /// Register an Api method handler to be invoked by name
+        /// </summary>
+        /// <param name="methodName"></param>
+        /// <param name="methodCallback"></param>
+        //*************************************************************************
+        public void AddApiMethod(string methodName, MethodCallback methodCallback)
+        {
+            _methodList.Add(methodName, methodCallback);
+        }
+
+        //*************************************************************************
+        /// <summary>
+        /// Register an event handler to be invoked for every event
+        /// </summary>
+        /// <param name="methodName"></param>
+        /// <param name="methodCallback"></param>
+        //*************************************************************************
+        public void AddEventCallback(EventCallback eventCallback)
+        {
+            _eventCallbackList.Add(eventCallback);
+        }
+
+        //*************************************************************************
+        /// <summary>
+        /// Handle a method request
+        /// </summary>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        //*************************************************************************
+        private WebApiLib.Response HandleRequest(WebApiLib.Request req)
+        {
+            try
+            {
+                if (!_methodList.TryGetValue(req.MethodName, out MethodCallback method))
+                    return new WebApiLib.Response(WebApiLib.ResultEnum.notfound, null, null);
+
+                return new WebApiLib.Response(WebApiLib.ResultEnum.ok, method.Invoke(req.Arguments), null);
+            }
+            catch (Exception ex)
+            {
+                return new WebApiLib.Response(WebApiLib.ResultEnum.exception, null, ex);
+            }
+        }
 
         //*********************************************************************
         /// <summary>
@@ -342,6 +424,8 @@ namespace WebApiLib
                     _connectedToApi = true;
                     break;
                 case MessageTypeEnum.request:
+                    var resp = new Message(HandleRequest(message.Request));
+                    _client.Send(resp.ToString());
                     break;
                 case MessageTypeEnum.response:
                     ResponsesReceived.Enqueue(message.Response);
@@ -415,7 +499,7 @@ namespace WebApiLib
     //*************************************************************************
     public class WebApiClient : WebApiCore
     {
-        WebServerLib.TTWebSocketClient _client = new WebServerLib.TTWebSocketClient();
+        //WebServerLib.TTWebSocketClient _client = new WebServerLib.TTWebSocketClient();
         bool _connected = false;
 
         //*********************************************************************
@@ -427,10 +511,15 @@ namespace WebApiLib
         //*********************************************************************
         public async Task<bool> Connect(string url)
         {
+            _client = new WebServerLib.TTWebSocketClient();
             _connected = await _client.Connect(url);
 
-            if(_connected)
+            if (_connected)
+            {
                 _client.Listen(GotMessageCallback, CancellationToken.None);
+                foreach(var ecb in _eventCallbackList)
+                    ecb?.Invoke(new ApiEvent(ApiEvent.EventTypeEnum.connect, null));
+            }
 
             return _connected;
         }

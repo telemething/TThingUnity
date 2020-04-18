@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 //*****************************************************************************
@@ -8,7 +9,7 @@ using UnityEngine;
 /// 
 /// </summary>
 //*****************************************************************************
-public class AppSettings 
+public class AppSettings
 {
     private string _appName = "TThingUnity";
     private string _appDescription = "TThing Unity";
@@ -68,7 +69,7 @@ public class AppSettings
     }
 
     void Update()
-    {       
+    {
     }
 
     //*************************************************************************
@@ -79,8 +80,8 @@ public class AppSettings
     //*************************************************************************
     public string Serialize()
     {
-        var pas = new PortableAppSettings(_appName, 
-            _appDescription , new List<AppSettingCollection>
+        var pas = new PortableAppSettings(_appName,
+            _appDescription, new List<AppSettingCollection>
         {
             ThingsManagerSettings.AppSettings,
             GameObjectSettings.AppSettings,
@@ -116,12 +117,47 @@ public class AppSettings
 
         try
         {
+            _webApiClient.AddEventCallback(WebApiEventCallback);
             var connected = _webApiClient.Connect(configService.URL);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            throw;
+            throw ex;
         }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Invoked by _webApiClient whenever an event (i.e. connet) occurs
+    /// </summary>
+    /// <param name="apiEvent"></param>
+    //*************************************************************************
+    private async void WebApiEventCallback(WebApiLib.ApiEvent apiEvent)
+    {
+        switch(apiEvent.EventType)
+        {
+            case WebApiLib.ApiEvent.EventTypeEnum.connect:
+                await SendSettingsToWebApi();
+                break;
+            case WebApiLib.ApiEvent.EventTypeEnum.disconnect:
+                break;
+        }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    //*************************************************************************
+    private async Task SendSettingsToWebApi()
+    {
+        var ser = AppSettings.App.Serialize();
+        var resp = await _webApiClient.Invoke(
+            new WebApiLib.Request(
+                WebApiLib.WebApiMethodNames.Settings_RegisterRemoteSettings,
+                new List<WebApiLib.Argument> 
+                { new WebApiLib.Argument("Settings", AppSettings.App.Serialize()) }));
     }
 
     //*************************************************************************
@@ -154,7 +190,7 @@ public class AppSettings
 
 //*****************************************************************************
 /// <summary>
-/// 
+/// App setting
 /// </summary>
 //*****************************************************************************
 public class AppSetting
@@ -191,7 +227,7 @@ public class AppSetting
 
 //*****************************************************************************
 /// <summary>
-/// 
+/// Container of app settings
 /// </summary>
 //*****************************************************************************
 public class AppSettingCollection
@@ -223,7 +259,7 @@ public class AppSettingCollection
 
 //*****************************************************************************
 /// <summary>
-/// 
+/// Container of portable app settings
 /// </summary>
 //*****************************************************************************
 public class PortableAppSettings
@@ -245,11 +281,88 @@ public class PortableAppSettings
     /// <param name="description"></param>
     /// <param name="appSettingCollections"></param>
     //*************************************************************************
-    public PortableAppSettings(string name, string description, List<AppSettingCollection> appSettingCollections)
+    public PortableAppSettings(string name, string description,
+        List<AppSettingCollection> appSettingCollections)
     {
         _name = name;
         _description = description;
         _appSettingCollections = appSettingCollections;
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// Create serialized data from this instance
+    /// </summary>
+    /// <returns></returns>
+    //*********************************************************************
+    public string Serialize()
+    {
+        return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// Find the appsetting of the given longname
+    /// </summary>
+    /// <param name="automationId"></param>
+    /// <returns></returns>
+    //*********************************************************************
+    public AppSetting FindAppSetting(string longname)
+    {
+        if (null == longname)
+            return null;
+
+        foreach (var settingsCollection in _appSettingCollections)
+        {
+            if (longname.Contains(settingsCollection.name))
+                foreach (var setting in settingsCollection.AppSettings)
+                {
+                    if ((settingsCollection.name + setting.name).Equals(longname))
+                        return setting;
+                }
+        }
+
+        return null;
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// Update the value of the app setting of the given longname
+    /// </summary>
+    /// <param name="longName"></param>
+    /// <param name="settingValue"></param>
+    //*********************************************************************
+
+    public void UpdateValue(string longName, object settingValue)
+    {
+        var appSetting = FindAppSetting(longName);
+
+        if (null == appSetting)
+            return;
+
+        switch (appSetting.Type)
+        {
+            case Type tipe when tipe == typeof(int):
+                appSetting.Value = Convert.ToInt32(settingValue);
+                break;
+            case Type tipe when tipe == typeof(Int64):
+                appSetting.Value = Convert.ToInt64(settingValue);
+                break;
+            case Type tipe when tipe == typeof(bool):
+                appSetting.Value = Convert.ToBoolean(settingValue);
+                break;
+            case Type tipe when tipe == typeof(float):
+                appSetting.Value = Convert.ToDouble(settingValue);
+                break;
+            case Type tipe when tipe == typeof(double):
+                appSetting.Value = Convert.ToDouble(settingValue);
+                break;
+            case Type tipe when tipe == typeof(string):
+                appSetting.Value = Convert.ToString(settingValue);
+                break;
+            default:
+                break;
+        }
     }
 }
 

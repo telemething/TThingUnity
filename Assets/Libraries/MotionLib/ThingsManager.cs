@@ -177,7 +177,7 @@ public class ThingsManager : MonoBehaviour
         //allow raycast to hit underside of terrain mesh
         Physics.queriesHitBackfaces = true;
 
-        var ser = AppSettings.App.Serialize();
+        //var ser = AppSettings.App.Serialize();
     }
 
     static float _manualDeclinationChange = 0f;
