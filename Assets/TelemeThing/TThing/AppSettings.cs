@@ -113,7 +113,8 @@ public class AppSettings
 
         _haveConfigServer = true;
 
-        _webApiClient = new WebApiLib.WebApiClient();
+        //_webApiClient = new WebApiLib.WebApiClient();
+        _webApiClient = WebApiLib.WebApiClient.Singleton;
 
         try
         {

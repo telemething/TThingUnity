@@ -499,8 +499,22 @@ namespace WebApiLib
     //*************************************************************************
     public class WebApiClient : WebApiCore
     {
+        public static WebApiClient Singleton { get { return _singleton; } }
+
+        private static WebApiClient _singleton = new WebApiClient();
+
         //WebServerLib.TTWebSocketClient _client = new WebServerLib.TTWebSocketClient();
         bool _connected = false;
+
+        //*********************************************************************
+        /// <summary>
+        /// Private constructor
+        /// </summary>
+        //*********************************************************************
+        private WebApiClient()
+        {
+
+        }
 
         //*********************************************************************
         /// <summary>
