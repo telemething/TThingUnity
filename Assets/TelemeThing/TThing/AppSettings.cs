@@ -91,9 +91,7 @@ public class AppSettings
         }
         );
 
-        string output = Newtonsoft.Json.JsonConvert.SerializeObject(pas);
-
-        return output;
+       return Newtonsoft.Json.JsonConvert.SerializeObject(pas);
     }
 
     private bool _haveConfigServer = false;
@@ -101,35 +99,46 @@ public class AppSettings
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Called when we receive an advertisement for an available config server,
+    /// we set an event callback and start up WebApi connection to that server.
     /// </summary>
     /// <param name="configService"></param>
     //*************************************************************************
-    private void ProcessConfigServerMessage(
+    private void ProcessConfigServerAdvertisement(
         TThingComLib.Messages.NetworkService configService)
     {
+        //leave if we are already connected
         if (_haveConfigServer)
             return;
 
         _haveConfigServer = true;
 
-        //_webApiClient = new WebApiLib.WebApiClient();
         _webApiClient = WebApiLib.WebApiClient.Singleton;
 
         try
         {
+            //set up a method to be called by the WebApi on any state change
             _webApiClient.AddEventCallback(WebApiEventCallback);
+
+            //set up a method to be called when the WebApi server wants to
+            //change an app setting
+            _webApiClient.AddApiMethod(
+                WebApiLib.WebApiMethodNames.Settings_ChangeSettings,
+                ChangeSettingsApiMethod);
+
+            //connect to the remote WebApi server
             var connected = _webApiClient.Connect(configService.URL);
         }
         catch (Exception ex)
         {
+            LogThis(ex);
             throw ex;
         }
     }
 
     //*************************************************************************
     /// <summary>
-    /// Invoked by _webApiClient whenever an event (i.e. connet) occurs
+    /// Invoked by _webApiClient whenever an event (i.e. connect) occurs
     /// </summary>
     /// <param name="apiEvent"></param>
     //*************************************************************************
@@ -138,6 +147,7 @@ public class AppSettings
         switch(apiEvent.EventType)
         {
             case WebApiLib.ApiEvent.EventTypeEnum.connect:
+                //send a copy of our settings to the server
                 await SendSettingsToWebApi();
                 break;
             case WebApiLib.ApiEvent.EventTypeEnum.disconnect:
@@ -153,12 +163,29 @@ public class AppSettings
     //*************************************************************************
     private async Task SendSettingsToWebApi()
     {
-        var ser = AppSettings.App.Serialize();
         var resp = await _webApiClient.Invoke(
             new WebApiLib.Request(
                 WebApiLib.WebApiMethodNames.Settings_RegisterRemoteSettings,
                 new List<WebApiLib.Argument> 
                 { new WebApiLib.Argument("Settings", AppSettings.App.Serialize()) }));
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Called when the WebApi server wants to change an app setting
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    //*************************************************************************
+    private List<WebApiLib.Argument> ChangeSettingsApiMethod(
+        List<WebApiLib.Argument> args)
+    {
+        if (!(args[0].Value is String appSettingsString))
+            throw new ArgumentException("args[0].Value not encoded as string");
+
+        var changedSettings = PortableAppSettings.Deserialize(appSettingsString);
+
+        return new List<WebApiLib.Argument>();
     }
 
     //*************************************************************************
@@ -174,7 +201,7 @@ public class AppSettings
             switch(networkService.ServiceType)
             {
                 case TThingComLib.Messages.ServiceTypeEnum.Config:
-                    ProcessConfigServerMessage(networkService);
+                    ProcessConfigServerAdvertisement(networkService);
                     break;
                 case TThingComLib.Messages.ServiceTypeEnum.GeoTile:
                     break;
@@ -186,6 +213,11 @@ public class AppSettings
                     break;
             }
         }
+    }
+
+    private void LogThis(Exception ex)
+    {
+
     }
 }
 
@@ -272,7 +304,8 @@ public class PortableAppSettings
     public string name => _name;
     //public object Value => _value;
     public object Description => _description;
-    public List<AppSettingCollection> AppSettingCollections => _appSettingCollections;
+    public List<AppSettingCollection> 
+        AppSettingCollections => _appSettingCollections;
 
     //*************************************************************************
     /// <summary>
@@ -292,13 +325,60 @@ public class PortableAppSettings
 
     //*********************************************************************
     /// <summary>
-    /// Create serialized data from this instance
+    /// Hydrate an instance of this class from serialized data
     /// </summary>
+    /// <param name="serializedData"></param>
     /// <returns></returns>
     //*********************************************************************
-    public string Serialize()
+    public static PortableAppSettings Deserialize(string serializedData)
     {
-        return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        return Newtonsoft.Json.JsonConvert.
+            DeserializeObject<PortableAppSettings>(serializedData);
+    }
+
+    //*********************************************************************
+    /// <summary>
+    /// Create serialized data from this instance
+    /// </summary>
+    /// <param name="serializedData">Include only changed settings if true
+    /// </param>
+    /// <returns></returns>
+    //*********************************************************************
+    public string Serialize(bool onlyChanged)
+    {
+        if (!onlyChanged)
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+
+        bool collectionAdded;
+        var settingCollectionsOut = new List<AppSettingCollection>();
+        var sc = new AppSettingCollection("", "", new List<AppSetting>());
+
+        foreach (var settingCollection in AppSettingCollections)
+        {
+            collectionAdded = false;
+
+            foreach (var appSetting in settingCollection.AppSettings)
+            {
+                if (appSetting.Changed)
+                {
+                    if (!collectionAdded)
+                    {
+                        sc = new AppSettingCollection(settingCollection.name,
+                            settingCollection.Description as string,
+                            new List<AppSetting>());
+                        settingCollectionsOut.Add(sc);
+                        collectionAdded = true;
+                    }
+
+                    sc.AppSettings.Add(appSetting);
+                }
+            }
+        }
+
+        PortableAppSettings returnVal = new PortableAppSettings(
+            this.name, this._description, settingCollectionsOut);
+
+        return Newtonsoft.Json.JsonConvert.SerializeObject(returnVal);
     }
 
     //*********************************************************************

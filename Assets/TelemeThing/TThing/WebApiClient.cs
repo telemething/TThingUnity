@@ -40,8 +40,10 @@ namespace WebApiLib
     //*************************************************************************
     public class WebApiMethodNames
     {
-        public static string Settings_RegisterRemoteSettings { get; } = 
+        public static string Settings_RegisterRemoteSettings { get; } =
             "Settings.RegisterRemoteSettings";
+        public static string Settings_ChangeSettings { get; } =
+            "Settings.ChangeSettings";
     }
 
     #region Message
@@ -395,14 +397,18 @@ namespace WebApiLib
         {
             try
             {
-                if (!_methodList.TryGetValue(req.MethodName, out MethodCallback method))
-                    return new WebApiLib.Response(WebApiLib.ResultEnum.notfound, null, null);
+                if (!_methodList.TryGetValue(req.MethodName, 
+                    out MethodCallback method))
+                    return new WebApiLib.Response(req.GUID, 
+                        WebApiLib.ResultEnum.notfound, null, null);
 
-                return new WebApiLib.Response(WebApiLib.ResultEnum.ok, method.Invoke(req.Arguments), null);
+                return new WebApiLib.Response(req.GUID, WebApiLib.ResultEnum.ok, 
+                    method.Invoke(req.Arguments), null);
             }
             catch (Exception ex)
             {
-                return new WebApiLib.Response(WebApiLib.ResultEnum.exception, null, ex);
+                return new WebApiLib.Response(req.GUID, 
+                    WebApiLib.ResultEnum.exception, null, ex);
             }
         }
 
@@ -425,7 +431,7 @@ namespace WebApiLib
                     break;
                 case MessageTypeEnum.request:
                     var resp = new Message(HandleRequest(message.Request));
-                    _client.Send(resp.ToString());
+                    _client.Send(resp.Serialize());
                     break;
                 case MessageTypeEnum.response:
                     ResponsesReceived.Enqueue(message.Response);
