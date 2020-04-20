@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
+
+#region AppSettings
+
 //*****************************************************************************
 /// <summary>
 /// 
@@ -14,6 +17,8 @@ public class AppSettings
     private string _appName = "TThingUnity";
     private string _appDescription = "TThing Unity";
     private static AppSettings _appSettings = new AppSettings("TThingUnity");
+    private bool _haveConfigServer = false;
+    WebApiLib.WebApiClient _webApiClient = null;
 
     public ThingsManagerSettings ThingsManagerSettings =
         new ThingsManagerSettings()
@@ -50,6 +55,8 @@ public class AppSettings
             TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 9, "The number of tiles per edge (-1 because center tile)"),
         };
 
+    List<AppSettingsBase> _settingCollections = new List<AppSettingsBase>();
+
     //*************************************************************************
     /// <summary>
     /// Fetch the singleton
@@ -66,6 +73,14 @@ public class AppSettings
     public AppSettings(string appName)
     {
         _appName = appName;
+        _settingCollections = new List<AppSettingsBase>
+        { 
+            ThingsManagerSettings, 
+            GameObjectSettings, 
+            UavObjectSettings, 
+            SelfSettings, 
+            TerrainSettings
+        };
     }
 
     void Update()
@@ -80,7 +95,7 @@ public class AppSettings
     //*************************************************************************
     public string Serialize()
     {
-        var pas = new PortableAppSettings(_appName,
+        /*var pas = new PortableAppSettings(_appName,
             _appDescription, new List<AppSettingCollection>
         {
             ThingsManagerSettings.AppSettings,
@@ -89,13 +104,16 @@ public class AppSettings
             SelfSettings.AppSettings,
             TerrainSettings.AppSettings
         }
-        );
+        );*/
+
+        var pas = new PortableAppSettings(_appName,
+            _appDescription, new List<AppSettingCollection>());
+
+        foreach (var settingCollection in _settingCollections)
+            pas.AppSettingCollections.Add(settingCollection.AppSettings);
 
        return Newtonsoft.Json.JsonConvert.SerializeObject(pas);
     }
-
-    private bool _haveConfigServer = false;
-    WebApiLib.WebApiClient _webApiClient = null;
 
     //*************************************************************************
     /// <summary>
@@ -133,6 +151,33 @@ public class AppSettings
         {
             LogThis(ex);
             throw ex;
+        }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="message"></param>
+    //*************************************************************************
+    public void ProcessMessage(TThingComLib.Messages.Message message)
+    {
+        foreach (var networkService in message.NetworkServices)
+        {
+            switch (networkService.ServiceType)
+            {
+                case TThingComLib.Messages.ServiceTypeEnum.Config:
+                    ProcessConfigServerAdvertisement(networkService);
+                    break;
+                case TThingComLib.Messages.ServiceTypeEnum.GeoTile:
+                    break;
+                case TThingComLib.Messages.ServiceTypeEnum.GroundStation:
+                    break;
+                case TThingComLib.Messages.ServiceTypeEnum.SelfTelem:
+                    break;
+                case TThingComLib.Messages.ServiceTypeEnum.Unknown:
+                    break;
+            }
         }
     }
 
@@ -185,34 +230,54 @@ public class AppSettings
 
         var changedSettings = PortableAppSettings.Deserialize(appSettingsString);
 
+        foreach(var appSettingCollection in changedSettings.AppSettingCollections)
+            foreach(var appSetting in appSettingCollection.AppSettings)
+                Update(appSettingCollection, appSetting);
+
         return new List<WebApiLib.Argument>();
     }
 
     //*************************************************************************
     /// <summary>
-    /// 
+    /// Update an appSetting value
     /// </summary>
-    /// <param name="message"></param>
+    /// <param name="newApSettingCollection"></param>
+    /// <param name="newAppSetting"></param>
     //*************************************************************************
-    public void ProcessMessage(TThingComLib.Messages.Message message)
+    private void Update(
+        AppSettingCollection newApSettingCollection, AppSetting newAppSetting)
     {
-        foreach( var networkService in message.NetworkServices )
+        var currentAppSetting = FindAppSetting(newApSettingCollection, newAppSetting);
+
+        if(null == currentAppSetting)
+            throw new ArgumentException(
+                "Setting '" + newAppSetting.name + "' not found");
+
+        currentAppSetting.Value = newAppSetting.Value;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Find an appSetting entry
+    /// </summary>
+    /// <param name="searchApSettingCollection"></param>
+    /// <param name="searchAppSetting"></param>
+    /// <returns></returns>
+    //*************************************************************************
+    private AppSetting FindAppSetting(
+        AppSettingCollection searchApSettingCollection, AppSetting searchAppSetting)
+    {
+        foreach( var appSettingCollection in _settingCollections)
         {
-            switch(networkService.ServiceType)
-            {
-                case TThingComLib.Messages.ServiceTypeEnum.Config:
-                    ProcessConfigServerAdvertisement(networkService);
-                    break;
-                case TThingComLib.Messages.ServiceTypeEnum.GeoTile:
-                    break;
-                case TThingComLib.Messages.ServiceTypeEnum.GroundStation:
-                    break;
-                case TThingComLib.Messages.ServiceTypeEnum.SelfTelem:
-                    break;
-                case TThingComLib.Messages.ServiceTypeEnum.Unknown:
-                    break;
-            }
+            if(searchApSettingCollection.name.Equals(appSettingCollection.AppSettings.name))
+                foreach ( var appSetting in appSettingCollection.AppSettings.AppSettings )
+                {
+                    if (searchAppSetting.name.Equals(appSetting.name))
+                        return appSetting;
+                }
         }
+
+        return null;
     }
 
     private void LogThis(Exception ex)
@@ -220,6 +285,10 @@ public class AppSettings
 
     }
 }
+
+#endregion
+
+#region Messages
 
 //*****************************************************************************
 /// <summary>
@@ -447,19 +516,35 @@ public class PortableAppSettings
     }
 }
 
+#endregion
+
+#region Settings
+
 //*****************************************************************************
 /// <summary>
 /// 
 /// </summary>
 //*****************************************************************************
-public class ThingsManagerSettings
+public class AppSettingsBase
 {
-    public AppSettingCollection AppSettings
+    protected AppSettingCollection _appSettings { set;  get; }
+    public AppSettingCollection AppSettings => _appSettings;
+}
+
+//*****************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*****************************************************************************
+public class ThingsManagerSettings : AppSettingsBase
+{
+    public new AppSettingCollection AppSettings
     {
         get
         {
-            return new AppSettingCollection("Things Manager", "Things Manager Settings",
+            base._appSettings = new AppSettingCollection("Things Manager", "Things Manager Settings",
             new List<AppSetting>() { TelemetryPort });
+            return base._appSettings;
         }
     }
 
@@ -471,15 +556,16 @@ public class ThingsManagerSettings
 /// 
 /// </summary>
 //*****************************************************************************
-public class GameObjectSettings
+public class GameObjectSettings : AppSettingsBase
 {
-    public AppSettingCollection AppSettings 
+    public new AppSettingCollection AppSettings 
     {
-        get 
-        { 
-            return new AppSettingCollection("Game", "Game Settings", 
-            new List<AppSetting>() { PlaceObjectsAboveTerrain, DefaultLerpTimeSpan, UseFlatTerrain, HaloScaleFactor }); 
-        } 
+        get
+        {
+            base._appSettings = new AppSettingCollection("Game", "Game Settings",
+            new List<AppSetting>() { PlaceObjectsAboveTerrain, DefaultLerpTimeSpan, UseFlatTerrain, HaloScaleFactor });
+            return base._appSettings;
+        }
     }
 
     public AppSetting PlaceObjectsAboveTerrain { get; set; }
@@ -497,14 +583,15 @@ public class GameObjectSettings
 /// 
 /// </summary>
 //*****************************************************************************
-public class UavObjectSettings
+public class UavObjectSettings : AppSettingsBase
 {
-    public AppSettingCollection AppSettings
+    public new AppSettingCollection AppSettings
     {
         get
         {
-            return new AppSettingCollection("UAV", "UAV Settings",
+            base._appSettings = new AppSettingCollection("UAV", "UAV Settings",
             new List<AppSetting>() { AltitudeOffset });
+            return base._appSettings;
         }
     }
 
@@ -516,14 +603,15 @@ public class UavObjectSettings
 /// 
 /// </summary>
 //*****************************************************************************
-public class SelfSettings
+public class SelfSettings : AppSettingsBase
 {
-    public AppSettingCollection AppSettings
+    public new AppSettingCollection AppSettings
     {
         get
         {
-            return new AppSettingCollection("Self", "Self Settings",
+            base._appSettings = new AppSettingCollection("Self", "Self Settings",
             new List<AppSetting>() { MyThingId, MainCameraAltitudeOverTerrainOffset });
+            return base._appSettings;
         }
     }
 
@@ -537,14 +625,15 @@ public class SelfSettings
 /// 
 /// </summary>
 //*****************************************************************************
-public class TerrainSettings
+public class TerrainSettings : AppSettingsBase
 {
-    public AppSettingCollection AppSettings
+    public new AppSettingCollection AppSettings
     {
         get
         {
-            return new AppSettingCollection("Terrain", "Terrain Settings",
+            base._appSettings = new AppSettingCollection("Terrain", "Terrain Settings",
             new List<AppSetting>() { TerrainZoomLevel, TerrainTilesPerSide });
+            return base._appSettings;
         }
     }
 
@@ -553,6 +642,7 @@ public class TerrainSettings
     public AppSetting TerrainTilesPerSide { get; set; }
 }
 
+#endregion
 
 
 
