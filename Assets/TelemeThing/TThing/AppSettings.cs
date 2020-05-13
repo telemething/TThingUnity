@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-
 #region AppSettings
 
 //*****************************************************************************
@@ -18,6 +17,7 @@ public class AppSettings
     private string _appDescription = "TThing Unity";
     private static AppSettings _appSettings = new AppSettings("TThingUnity");
     private bool _haveConfigServer = false;
+    private bool _haveGeoTileServer = false;
     WebApiLib.WebApiClient _webApiClient = null;
 
     public ThingsManagerSettings ThingsManagerSettings =
@@ -62,7 +62,15 @@ public class AppSettings
     /// Fetch the singleton
     /// </summary>
     //*************************************************************************
-    public static AppSettings App => _appSettings;
+    public static AppSettings App
+    {
+        get
+        {
+            if (null == _appSettings)
+                _appSettings = new AppSettings("TThingUnity");
+            return _appSettings;
+        }
+    }
 
     //*************************************************************************
     /// <summary>
@@ -158,6 +166,25 @@ public class AppSettings
     /// <summary>
     /// 
     /// </summary>
+    /// <param name="geoTileService"></param>
+    //*************************************************************************
+    private void ProcessGeoTileServerAdvertisement(
+        TThingComLib.Messages.NetworkService geoTileService)
+    {
+        //leave if we are already connected
+        if (_haveGeoTileServer)
+            return;
+
+        _haveGeoTileServer = true;
+
+        //indicate that we have a GeoTileServer available
+        WebApiLib.WebApiClient.Singleton.IsGeoTileServer = true;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
     /// <param name="message"></param>
     //*************************************************************************
     public void ProcessMessage(TThingComLib.Messages.Message message)
@@ -170,6 +197,7 @@ public class AppSettings
                     ProcessConfigServerAdvertisement(networkService);
                     break;
                 case TThingComLib.Messages.ServiceTypeEnum.GeoTile:
+                    ProcessGeoTileServerAdvertisement(networkService);
                     break;
                 case TThingComLib.Messages.ServiceTypeEnum.GroundStation:
                     break;

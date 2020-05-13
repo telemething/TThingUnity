@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 // https://github.com/LocalJoost/UnityTextureDownload/blob/master/Assets/App/DynamicTextureDownloader.cs
@@ -19,6 +20,7 @@ public class DynamicTextureDownloader : MonoBehaviour
     private string _pngExtenstion = "png";
 
     private UnityEngine.Networking.UnityWebRequest _imageLoader = null;
+    protected WebApiLib.WebApiClient _webApiClient = null;
 
     private string _previousImageUrl = null;
     private bool _appliedToTexture = false;
@@ -33,6 +35,7 @@ public class DynamicTextureDownloader : MonoBehaviour
     void Start()
     {
         _originalScale = transform.localScale;
+        _webApiClient = WebApiLib.WebApiClient.Singleton;
     }
 
     //*************************************************************************
@@ -240,6 +243,16 @@ public class MapTile : DynamicTextureDownloader
         {
             return;
         }
+
+        //can we fetch from paired ApiService?
+        if(WebApiLib.WebApiClient.Singleton.IsGeoTileServer)
+        {
+            FetchElevationTileFromWebApi();
+            return;
+        }
+
+        //fetch from third party tile server
+
         var northEast = _tileData.GetNorthEast();
         var southWest = _tileData.GetSouthWest();
 
@@ -261,6 +274,29 @@ public class MapTile : DynamicTextureDownloader
         IsDownloading = true;
     }
 
+    string _downloadedData = null;
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    //*************************************************************************
+    private async Task FetchElevationTileFromWebApi()
+    {
+        IsDownloading = true;
+
+        var resp = await _webApiClient.Invoke(
+            new WebApiLib.Request(
+                WebApiLib.WebApiMethodNames.Geo_FetchElevationTile,
+                new List<WebApiLib.Argument>
+                { new WebApiLib.Argument("zoomlevel", _tileData.ZoomLevel), 
+                  new WebApiLib.Argument("x", _tileData.X),
+                  new WebApiLib.Argument("y", _tileData.Y) }));
+
+        _downloadedData = resp.Arguments[0].ToString();
+    }
+
     //*************************************************************************
     /// <summary>
     /// 
@@ -276,7 +312,7 @@ public class MapTile : DynamicTextureDownloader
     /// 
     /// </summary>
     //*************************************************************************
-    private void ProcessElevationDataFromWeb()
+    private void ProcessElevationDataFromWeby()
     {
         if (TileData == null || _downloader == null)
         {
@@ -294,9 +330,56 @@ public class MapTile : DynamicTextureDownloader
                 TileCache.Store(_downloader.downloadHandler.text, _tileData.ZoomLevel,
                     _tileData.X, _tileData.Y, TileCache.DataTypeEnum.Elevation,
                     TileCache.DataProviderEnum.VirtualEarth, _txtExtenstion);
-            
+
             ApplyElevationData(elevationData);
         }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    private void ProcessElevationDataFromWeb()
+    {
+        if (!IsDownloading)
+            return;
+
+        if (null != _downloadedData)
+        {
+            IsDownloading = false;
+            ProcessElevationData(_downloadedData);
+            return;
+        }
+
+        if (_downloader == null)
+            return;
+
+        if (_downloader.isDone)
+        {
+            IsDownloading = false;
+            ProcessElevationData(_downloader.downloadHandler.text);
+        }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="data"></param>
+    //*************************************************************************
+    private void ProcessElevationData(string data)
+    {
+        var elevationData = JsonUtility.FromJson<ElevationResult>(data);
+        if (elevationData == null)
+            return;
+
+        if (UseCache)
+            TileCache.Store(_downloader.downloadHandler.text, _tileData.ZoomLevel,
+                _tileData.X, _tileData.Y, TileCache.DataTypeEnum.Elevation,
+                TileCache.DataProviderEnum.VirtualEarth, _txtExtenstion);
+
+        ApplyElevationData(elevationData);
     }
 
     //*************************************************************************

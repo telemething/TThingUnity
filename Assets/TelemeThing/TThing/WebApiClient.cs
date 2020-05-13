@@ -44,6 +44,10 @@ namespace WebApiLib
             "Settings.RegisterRemoteSettings";
         public static string Settings_ChangeSettings { get; } =
             "Settings.ChangeSettings";
+        public static string Geo_FetchImageTile { get; } =
+            "Geo.FetchImageTile";
+        public static string Geo_FetchElevationTile { get; } =
+            "Geo.FetchElevationTile";
     }
 
     #region Message
@@ -511,6 +515,8 @@ namespace WebApiLib
 
         //WebServerLib.TTWebSocketClient _client = new WebServerLib.TTWebSocketClient();
         bool _connected = false;
+
+        public bool IsGeoTileServer { set; get; } = false;
 
         //*********************************************************************
         /// <summary>

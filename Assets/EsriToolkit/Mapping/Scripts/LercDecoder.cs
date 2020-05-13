@@ -21,7 +21,7 @@ namespace Esri.PrototypeLab.HoloLens.Unity {
 #if UNITY_EDITOR
         private const string DLL = "Lerc32";
 #else
-        pprivate const string DLL = "__Internal";
+        private const string DLL = "__Internal";
 #endif
         public enum DataType { dt_char, dt_uchar, dt_short, dt_ushort, dt_int, dt_uint, dt_float, dt_double }
         [DllImport(DLL)]
