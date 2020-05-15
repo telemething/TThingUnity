@@ -85,13 +85,15 @@ namespace WebApiLib
     //*************************************************************************
     public class ApiEvent
     {
-        public enum EventTypeEnum { unknown, connect, disconnect }
+        public enum EventTypeEnum { unknown, connect, disconnect, failure }
 
         public Guid GUID { set; get; }
 
         public EventTypeEnum EventType { set; get; }
 
         public List<Argument> Arguments { set; get; }
+
+        public string Message { set; get; }
 
         public ApiEvent()
         {
@@ -538,14 +540,34 @@ namespace WebApiLib
         public async Task<bool> Connect(string url)
         {
             _client = new WebServerLib.TTWebSocketClient();
-            _connected = await _client.Connect(url);
+            _connected = await _client.Connect(url, 
+                (connectionEvent) =>
+                {
+                    ApiEvent.EventTypeEnum eventType = ApiEvent.EventTypeEnum.unknown;
+                    List<Argument> argList = null;
 
-            if (_connected)
-            {
-                _client.Listen(GotMessageCallback, CancellationToken.None);
-                foreach(var ecb in _eventCallbackList)
-                    ecb?.Invoke(new ApiEvent(ApiEvent.EventTypeEnum.connect, null));
-            }
+                    switch (connectionEvent.ConnectionEventType)
+                    {
+                        case WebServerLib.ConnectionEvent.ConnectionEventTypeEnum.connection:
+                            eventType = ApiEvent.EventTypeEnum.connect;
+                            argList = new List<Argument>()
+                                { new Argument("message", "Connected to: " + url) };
+                            break;
+                        case WebServerLib.ConnectionEvent.ConnectionEventTypeEnum.disconnection:
+                            eventType = ApiEvent.EventTypeEnum.disconnect;
+                            argList = new List<Argument>()
+                                { new Argument("message", "DisConnected from: " + url) };
+                            break;
+                        case WebServerLib.ConnectionEvent.ConnectionEventTypeEnum.failure:
+                            eventType = ApiEvent.EventTypeEnum.failure;
+                            argList = new List<Argument>() 
+                                { new Argument("message", connectionEvent.Message) };
+                            break;
+                    }
+
+                    foreach (var ecb in _eventCallbackList)
+                        ecb?.Invoke(new ApiEvent(eventType, argList));
+                });
 
             return _connected;
         }
@@ -590,6 +612,28 @@ namespace WebServerLib
 
     //*************************************************************************
     /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************    
+    public class ConnectionEvent
+    {
+        public enum ConnectionEventTypeEnum { connection, disconnection, failure }
+
+        public ConnectionEventTypeEnum ConnectionEventType => _connectionEventType;
+        public string Message => _message;
+
+        private ConnectionEventTypeEnum _connectionEventType;
+        private string _message;
+
+        public ConnectionEvent(ConnectionEventTypeEnum connectionEventType, string message)
+        {
+            _connectionEventType = connectionEventType;
+            _message = message;
+        }
+    }
+
+    //*************************************************************************
+    /// <summary>
     /// Web socket base
     /// </summary>
     //*************************************************************************
@@ -623,7 +667,7 @@ namespace WebServerLib
         /// </summary>
         /// <param name="url"></param>
         //*********************************************************************
-        public async Task<bool> Connect(string url)
+        public async Task<bool> Connect(string url, Action<ConnectionEvent> callback)
         {
             try
             {
@@ -645,11 +689,22 @@ namespace WebServerLib
                     Thread.Sleep(sleepTimeMs);
                 }
 
+                callback?.Invoke(
+                    new ConnectionEvent(
+                        ConnectionEvent.ConnectionEventTypeEnum.connection,
+                        "Connected to : " + url));
+
+
                 return true;
             }
             catch (Exception ex)
             {
-                throw;
+                callback?.Invoke(
+                    new ConnectionEvent(
+                        ConnectionEvent.ConnectionEventTypeEnum.failure, 
+                        ex.Message));
+
+                return false;
             }
         }
 

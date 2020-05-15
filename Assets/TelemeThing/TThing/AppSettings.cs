@@ -225,6 +225,8 @@ public class AppSettings
                 break;
             case WebApiLib.ApiEvent.EventTypeEnum.disconnect:
                 break;
+            case WebApiLib.ApiEvent.EventTypeEnum.failure:
+                break;
         }
     }
 

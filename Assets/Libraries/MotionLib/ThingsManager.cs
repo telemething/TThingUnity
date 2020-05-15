@@ -65,11 +65,16 @@ public class ThingsManager : MonoBehaviour
 
     public int Port = (int)AppSettings.App.ThingsManagerSettings.TelemetryPort.Value;
     public string MyThingId = (string)AppSettings.App.SelfSettings.MyThingId.Value;
+    private Queue<Action> _exeQueue = new Queue<Action>();
 
     public UnityEngine.UI.Text TextObject;
     private PointLatLonAlt _origin = null;
     private static Thing _self = null;
     private UnityEngine.UI.Text _infoTextLarge = null;
+    private UnityEngine.UI.Text _popupMessageBoxText = null;
+    private UnityEngine.UI.Text _popupMessageBoxTitle = null;
+    private UnityEngine.UI.Button _popupMessageBoxCloseButton = null;
+    private UnityEngine.Canvas _popupMessageBox = null;
 
     private static double _maxMaxThingDistance = 50.0;
     private static double _minMinThingDistance = 0.3;
@@ -105,6 +110,7 @@ public class ThingsManager : MonoBehaviour
     float _compassAlignementCameraMaxAllowedRotation = 2;
     double _compassAlignementCompassReadingSum = 0;
     int _compassAlignementCompassReadingCount = 0;
+    int _popupMessageShowForTimeMs = 5000;
 
     public static Thing Self
     {
@@ -153,12 +159,16 @@ public class ThingsManager : MonoBehaviour
 
     void Start()
     {
+        WebApiLib.WebApiClient.Singleton.AddEventCallback(WebApiEventCallback);
+
         _TM = ThingMotion.GetPoseObject(Port);
         _TM.SetThing(MyThingId, Thing.TypeEnum.Person, Thing.SelfEnum.Self, Thing.RoleEnum.Observer);
 
         T1.CLogger.LogThis("ThingsManager.Start()");
 
         _infoTextLarge = Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("InfoTextLarge");
+
+        InitPopupMessageBox();
 
         //MyUtilities utils = new MyUtilities();
         //utils.AddValues(2, 3);
@@ -200,6 +210,12 @@ public class ThingsManager : MonoBehaviour
             return;
         }
 
+        //execute the things
+        while (_exeQueue.Count > 0)
+        {
+            _exeQueue.Dequeue().Invoke();
+        }
+
         var things = _TM.GetThings();
 
         //at each update, we check max and min distances of the things
@@ -231,6 +247,113 @@ public class ThingsManager : MonoBehaviour
             MixedRealityPlayspace.Rotation *= Quaternion.Euler(Vector3.up * _manualDeclinationChange);
             _manualDeclinationChange = 0f;
         }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    private void InitPopupMessageBox()
+    {
+        _popupMessageBoxText =
+            Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("PopupMessageBoxText");
+        _popupMessageBoxTitle =
+            Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("PopupMessageBoxTitle");
+        _popupMessageBox = 
+            Utils.FindObjectComponentInScene<UnityEngine.Canvas>("PopupMessageBox");
+        _popupMessageBoxCloseButton = 
+            Utils.FindObjectComponentInScene<UnityEngine.UI.Button>("PopupMessageBoxCloseButton");
+
+        if(null != _popupMessageBox)
+            _popupMessageBox.enabled = false;
+        if (null != _popupMessageBoxCloseButton)
+            _popupMessageBoxCloseButton.onClick.AddListener(() => _popupMessageBox.enabled = false);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Show a pop up message. This must be called from the main queue.
+    /// </summary>
+    /// <param name="title"></param>
+    /// <param name="message"></param>
+    //*************************************************************************
+    private void ShowMessage(string title, string message)
+    {
+        try
+        {
+            if (null != _popupMessageBoxTitle)
+                _popupMessageBoxTitle.text = title;
+
+            if (null != _popupMessageBoxText)
+                _popupMessageBoxText.text = message;
+
+            if (null != _popupMessageBox)
+                _popupMessageBox.enabled = true;
+        }
+        catch(Exception ex)
+        {
+            var ff = ex.Message;
+        }
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Show a pop up message for given amount of time
+    /// </summary>
+    /// <param name="title"></param>
+    /// <param name="message"></param>
+    /// <param name="showForTimeMs">time in ms, 0 = infinite</param>
+    //*************************************************************************
+    public void QueueMessage(string title, string message, int showForTimeMs)
+    {
+        _exeQueue.Enqueue(() => ShowMessage(title, message));
+
+        if(0 < showForTimeMs)
+            new Timer(
+                (arg) => 
+                {
+                    _exeQueue.Enqueue(
+                        () => { _popupMessageBox.enabled = false; });
+                }, 
+                null, 5000, Timeout.Infinite);
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// Invoked by _webApiClient whenever an event (i.e. connect) occurs
+    /// </summary>
+    /// <param name="apiEvent"></param>
+    //*************************************************************************
+    private async void WebApiEventCallback(WebApiLib.ApiEvent apiEvent)
+    {
+        string title = "WebApi Event: Unknown";
+
+        switch (apiEvent.EventType)
+        {
+            case WebApiLib.ApiEvent.EventTypeEnum.connect:
+                title = "WebApi Connected";
+                break;
+            case WebApiLib.ApiEvent.EventTypeEnum.disconnect:
+                title = "WebApi Disconnected";
+                break;
+            case WebApiLib.ApiEvent.EventTypeEnum.failure:
+                title = "WebApi Connection Failed";
+                break;
+        }
+
+        string message = "";
+
+        if (null != apiEvent.Arguments)
+            if (null != apiEvent.Arguments[0])
+                if (0 < apiEvent.Arguments.Count)
+                    if (null != apiEvent.Arguments[0].Value)
+                        message = apiEvent.Arguments[0].Value as string;
+
+        if(null== message)
+            message = "";
+
+        QueueMessage(title, message, _popupMessageShowForTimeMs);
     }
 
     //*********************************************************************

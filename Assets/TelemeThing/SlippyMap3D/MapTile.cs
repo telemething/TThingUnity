@@ -247,7 +247,8 @@ public class MapTile : DynamicTextureDownloader
         //can we fetch from paired ApiService?
         if(WebApiLib.WebApiClient.Singleton.IsGeoTileServer)
         {
-            FetchElevationTileFromWebApi();
+            //Call async, don't await.
+            FetchElevationTileFromWebApiAsync();
             return;
         }
 
@@ -282,7 +283,7 @@ public class MapTile : DynamicTextureDownloader
     /// </summary>
     /// <returns></returns>
     //*************************************************************************
-    private async Task FetchElevationTileFromWebApi()
+    private async Task FetchElevationTileFromWebApiAsync()
     {
         IsDownloading = true;
 
