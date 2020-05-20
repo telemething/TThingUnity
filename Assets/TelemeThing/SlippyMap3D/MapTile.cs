@@ -243,9 +243,12 @@ public class MapTile : DynamicTextureDownloader
         {
             return;
         }
+            
+        if (null == _webApiClient)
+            _webApiClient = WebApiLib.WebApiClient.Singleton;
 
         //can we fetch from paired ApiService?
-        if(WebApiLib.WebApiClient.Singleton.IsGeoTileServer)
+        if(_webApiClient.IsGeoTileServer)
         {
             //Call async, don't await.
             FetchElevationTileFromWebApiAsync();
@@ -295,7 +298,7 @@ public class MapTile : DynamicTextureDownloader
                   new WebApiLib.Argument("x", _tileData.X),
                   new WebApiLib.Argument("y", _tileData.Y) }));
 
-        _downloadedData = resp.Arguments[0].ToString();
+        _downloadedData = resp.Arguments[0].Value.ToString();
     }
 
     //*************************************************************************
@@ -376,7 +379,7 @@ public class MapTile : DynamicTextureDownloader
             return;
 
         if (UseCache)
-            TileCache.Store(_downloader.downloadHandler.text, _tileData.ZoomLevel,
+            TileCache.Store(data, _tileData.ZoomLevel, 
                 _tileData.X, _tileData.Y, TileCache.DataTypeEnum.Elevation,
                 TileCache.DataProviderEnum.VirtualEarth, _txtExtenstion);
 

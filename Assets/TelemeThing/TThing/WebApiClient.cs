@@ -549,6 +549,9 @@ namespace WebApiLib
                     switch (connectionEvent.ConnectionEventType)
                     {
                         case WebServerLib.ConnectionEvent.ConnectionEventTypeEnum.connection:
+
+                            _client.Listen(GotMessageCallback, CancellationToken.None);
+
                             eventType = ApiEvent.EventTypeEnum.connect;
                             argList = new List<Argument>()
                                 { new Argument("message", "Connected to: " + url) };
