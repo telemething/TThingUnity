@@ -26,6 +26,8 @@ public class DynamicTextureDownloader : MonoBehaviour
     private bool _appliedToTexture = false;
 
     private Vector3 _originalScale;
+    bool IsDownloading = false;
+    byte[] _downloadedData = null;
 
     //*************************************************************************
     /// <summary>
@@ -66,18 +68,17 @@ public class DynamicTextureDownloader : MonoBehaviour
         {
             _previousImageUrl = ImageUrl;
 
+            //Look in cache, if there fetch from cache and load into texture
             if(UseCache & TileCache.DoesExist(_tileData.ZoomLevel, _tileData.X, _tileData.Y, 
                 TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, _pngExtenstion) )
             {
                 var rawData = TileCache.FetchBytes(_tileData.ZoomLevel, _tileData.X, _tileData.Y,
                 TileCache.DataTypeEnum.StreetMap, TileCache.DataProviderEnum.OSM, _pngExtenstion);
 
+                //get texture from image
                 var tex = new Texture2D(_tileData.MapPixelSize, _tileData.MapPixelSize);
                 tex.LoadImage(rawData);
                 GetComponent<Renderer>().material.mainTexture = tex;
-
-                //Destroy(_imageLoader.texture);
-                //_imageLoader = null;
 
                 _appliedToTexture = true;
 
@@ -85,17 +86,47 @@ public class DynamicTextureDownloader : MonoBehaviour
                     DoResizePlane(tex);
             }
             else
+                //not found in cache, fetch from external service
                 OnStartLoad();
         }
 
+        //if fetching from WebApi service
+        if (IsDownloading)
+        //check if done downloading from WebApi service
+        if (null != _downloadedData)
+        {
+            IsDownloading = false;
+            //ProcessElevationData(_downloadedData);
+
+            //store to cache
+            if (UseCache)
+                TileCache.Store(_downloadedData, _tileData.ZoomLevel,
+                    _tileData.X, _tileData.Y, TileCache.DataTypeEnum.StreetMap,
+                    TileCache.DataProviderEnum.OSM, _pngExtenstion);
+
+            //get texture from image
+            var tex = new Texture2D(_tileData.MapPixelSize, _tileData.MapPixelSize);
+            tex.LoadImage(_downloadedData);
+            GetComponent<Renderer>().material.mainTexture = tex;
+
+            _appliedToTexture = true;
+
+            if (ResizePlane)
+                DoResizePlane(tex);
+            
+            return;
+        }
+
+        //if fetching from a third party tile server
         if (_imageLoader != null && _imageLoader.isDone && !_appliedToTexture)
         {
             _appliedToTexture = true;
 
-            //Destroy(GetComponent<Renderer>().material.mainTexture);
+            //get texture from image
             var tex = ((UnityEngine.Networking.DownloadHandlerTexture)_imageLoader.downloadHandler).texture;  
             GetComponent<Renderer>().material.mainTexture = tex;
 
+            //store to cache
             if (UseCache)
                 TileCache.Store(ImageConversion.EncodeToPNG(tex), _tileData.ZoomLevel,
                     _tileData.X, _tileData.Y, TileCache.DataTypeEnum.StreetMap,
@@ -138,8 +169,49 @@ public class DynamicTextureDownloader : MonoBehaviour
     protected virtual void OnStartLoad()
     {
         _appliedToTexture = false;
+
+        if (null == _webApiClient)
+            _webApiClient = WebApiLib.WebApiClient.Singleton;
+
+        //can we fetch from paired ApiService?
+        if (_webApiClient.IsGeoTileServer)
+        {
+            //Call async, don't await.
+            FetchImageTileFromWebApiAsync();
+            return;
+        }
+
         _imageLoader = UnityEngine.Networking.UnityWebRequestTexture.GetTexture(ImageUrl); 
         _imageLoader.SendWebRequest();//T3
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    //*************************************************************************
+    private async Task FetchImageTileFromWebApiAsync()
+    {
+        IsDownloading = true;
+
+        var resp = await _webApiClient.Invoke(
+            new WebApiLib.Request(
+                WebApiLib.WebApiMethodNames.Geo_FetchImageTile,
+                new List<WebApiLib.Argument>
+                { new WebApiLib.Argument("zoomlevel", _tileData.ZoomLevel),
+                  new WebApiLib.Argument("x", _tileData.X),
+                  new WebApiLib.Argument("y", _tileData.Y) }));
+
+        try
+        {
+            var imageB64 = resp.Arguments[0].Value as string;
+            _downloadedData = Convert.FromBase64String(imageB64);
+        }
+        catch (Exception ex)
+        {
+            //TODO * React to this
+        }
     }
 
     //*************************************************************************

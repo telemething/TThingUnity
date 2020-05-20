@@ -52,7 +52,7 @@ public class AppSettings
         new TerrainSettings()
         {
             TerrainZoomLevel = new AppSetting("TerrainZoomLevel", 18, "The zoom level fetched from the tile server"),
-            TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 7, "The number of tiles per edge (-1 because center tile)"),
+            TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 8, "The number of tiles per edge (-1 because center tile)"),
         };
 
     List<AppSettingsBase> _settingCollections = new List<AppSettingsBase>();
