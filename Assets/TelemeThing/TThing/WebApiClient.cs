@@ -660,6 +660,7 @@ namespace WebServerLib
         //private GotMessageCallback _gotMessageCallback;
 
         ClientWebSocket sock = new ClientWebSocket();
+        Action<ConnectionEvent> _connectionEventCallback;
 
         public TTWebSocketClient()
         { }
@@ -672,6 +673,8 @@ namespace WebServerLib
         //*********************************************************************
         public async Task<bool> Connect(string url, Action<ConnectionEvent> callback)
         {
+            _connectionEventCallback = callback;
+
             try
             {
                 await sock.ConnectAsync(new Uri(url), CancellationToken.None);
@@ -702,6 +705,8 @@ namespace WebServerLib
             }
             catch (Exception ex)
             {
+                var msg = ex.Message;
+
                 callback?.Invoke(
                     new ConnectionEvent(
                         ConnectionEvent.ConnectionEventTypeEnum.failure, 
@@ -793,7 +798,13 @@ namespace WebServerLib
                 }
                 catch (Exception ex)
                 {
-                    //TODO Do Something
+                    _connectionEventCallback?.Invoke(
+                        new ConnectionEvent(
+                            ConnectionEvent.ConnectionEventTypeEnum.disconnection,
+                            ex.Message));
+
+                    //TODO : maybe not always exit
+                    break;
                 }
             };
         }

@@ -464,7 +464,7 @@ public class ThingsManager : MonoBehaviour
     /// <param name="encodedData"></param>
     /// <returns></returns>
     //*********************************************************************
-    static object[] Decode(byte[] encodedData)
+    /*static object[] Decode(byte[] encodedData)
     {
         try
         {
@@ -542,14 +542,14 @@ public class ThingsManager : MonoBehaviour
         {
             throw new Exception("Decode() : " + ex.Message);
         }
-    }
+    }*/
 
     //*********************************************************************
     /// <summary>
     /// Fetch and decode LERC data from file
     /// </summary>
     //*********************************************************************
-    void TestLerc()
+    /*void TestLerc()
     {
         try
         {
@@ -575,7 +575,7 @@ public class ThingsManager : MonoBehaviour
         {
             Console.WriteLine("Exception: " + ex.Message);
         }
-    }
+    }*/
 
     //*************************************************************************
     /// <summary>

@@ -19,6 +19,8 @@ public class DynamicTextureDownloader : MonoBehaviour
     protected TileInfo _tileData;
     private string _pngExtenstion = "png";
 
+    bool _useWebApiClient = false;
+
     private UnityEngine.Networking.UnityWebRequest _imageLoader = null;
     protected WebApiLib.WebApiClient _webApiClient = null;
 
@@ -174,6 +176,7 @@ public class DynamicTextureDownloader : MonoBehaviour
             _webApiClient = WebApiLib.WebApiClient.Singleton;
 
         //can we fetch from paired ApiService?
+        if(_useWebApiClient)
         if (_webApiClient.IsGeoTileServer)
         {
             //Call async, don't await.
@@ -233,9 +236,15 @@ public class DynamicTextureDownloader : MonoBehaviour
     }
 }
 
-
+//*****************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*****************************************************************************
 public class MapTile : DynamicTextureDownloader
 {
+    bool _useWebApiClient = false;
+
     public IMapUrlBuilder MapBuilder { get; set; }
     private string _txtExtenstion = "txt";
     private static object _webReqLock = new object();
@@ -320,6 +329,7 @@ public class MapTile : DynamicTextureDownloader
             _webApiClient = WebApiLib.WebApiClient.Singleton;
 
         //can we fetch from paired ApiService?
+        if(_useWebApiClient)
         if(_webApiClient.IsGeoTileServer)
         {
             //Call async, don't await.

@@ -2,7 +2,43 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using System.Collections;
 
+//*****************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*****************************************************************************
+class SpiralOut
+{
+    int layer = 1;
+    int leg  = 0;
+   
+    private int x = 0, y = 0;
+
+    public int X => x;
+    public int Y => y;
+
+    public SpiralOut()
+    { }
+
+    public void goNext()
+    {
+        switch (leg)
+        {
+            case 0: ++x; if (x == layer) ++leg; break;
+            case 1: ++y; if (y == layer) ++leg; break;
+            case 2: --x; if (-x == layer) ++leg; break;
+            case 3: --y; if (-y == layer) { leg = 0; ++layer; } break;
+        }
+    }
+};
+
+//*****************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*****************************************************************************
 public class MapBuilder : MonoBehaviour
 {
     public int ZoomLevel = 12;
@@ -32,7 +68,13 @@ public class MapBuilder : MonoBehaviour
     private List<MapTile> _mapTiles;
 
     private UnityEngine.UI.Text _infoTextLarge = null;
+    private IEnumerator _loadTilesCoroutine = null;
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     void Start()
     {
         _infoTextLarge = Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("InfoTextLarge");
@@ -44,6 +86,15 @@ public class MapBuilder : MonoBehaviour
         }
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="lat"></param>
+    /// <param name="lon"></param>
+    /// <param name="zoom"></param>
+    /// <param name="size"></param>
+    //*************************************************************************
     public void ShowMap(float lat, float lon, int zoom, int size)
     {
         _infoTextLarge = Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("InfoTextLarge");
@@ -57,6 +108,11 @@ public class MapBuilder : MonoBehaviour
         ShowMap();
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
     public void ShowMap()
     {
         if(0 == MapTileSize)
@@ -73,7 +129,10 @@ public class MapBuilder : MonoBehaviour
         //_centerTile.X -= (int)(MapTileSize / 2.0f);
         //_centerTile.Y += (int)(MapTileSize / 2.0f);
 
-        LoadTiles();
+        //LoadTiles();
+        _loadTilesCoroutine = LoadTiles();
+        StartCoroutine(_loadTilesCoroutine);
+
         //Camera.main.farClipPlane = 10000;
 
         if (BuildOnStart)
@@ -84,7 +143,47 @@ public class MapBuilder : MonoBehaviour
         }
     }
 
-    private void LoadTiles(bool forceReload = false)
+    //*************************************************************************
+    /// <summary>
+    /// Build map tiles, spiral from center out
+    /// </summary>
+    /// <param name="forceReload"></param>
+    //*************************************************************************
+    private IEnumerator LoadTiles(bool forceReload = false)
+    {
+        var countFetched = 0;
+        var tileIndex = 0;
+        var tileCount = (MapSize + 1) * (MapSize + 1);
+
+        SpiralOut so = new SpiralOut();
+
+        for (int layer = 0; layer < tileCount; layer++)
+        {
+            _infoTextLarge.text = $"Fetching Tile: {countFetched++} of: {(MapSize + 1) * (MapSize + 1) - 1}";
+
+            var tile = GetOrCreateTile(so.X, so.Y, tileIndex++);
+
+            tile.SetTileData(new TileInfo(
+                _centerTile.X - so.X, _centerTile.Y + so.Y,
+                ZoomLevel, MapTileSize, _centerTile.CenterLocation),
+                forceReload);
+
+            tile.gameObject.name = string.Format("({0},{1}) - {2},{3}", so.X, so.Y, tile.TileData.X,
+                tile.TileData.Y);
+
+            MaxElevation = Math.Max(MaxElevation, tile.MaxElevation);
+            MinElevation = Math.Min(MinElevation, tile.MinElevation);
+
+            so.goNext();
+
+            if(0 == tileIndex % 4)
+                yield return null;
+        }
+
+        _infoTextLarge.text = $"";
+    }
+
+    private IEnumerator LoadTilesOld(bool forceReload = false)
     {
         var size = (int)(MapSize / 2);
         var countFetched = 0;
@@ -94,12 +193,12 @@ public class MapBuilder : MonoBehaviour
         {
             for (var y = -size; y <= size; y++)
             {
-                _infoTextLarge.text = $"Fetching Tile: {countFetched++} of: {(size+1)*(size+1)}";
+                _infoTextLarge.text = $"Fetching Tile: {countFetched++} of: {(MapSize + 1) * (MapSize + 1) - 1}";
 
                 var tile = GetOrCreateTile(x, y, tileIndex++);
 
                 tile.SetTileData(new TileInfo(
-                    _centerTile.X - x, _centerTile.Y + y, 
+                    _centerTile.X - x, _centerTile.Y + y,
                     ZoomLevel, MapTileSize, _centerTile.CenterLocation),
                     forceReload);
 
@@ -111,12 +210,23 @@ public class MapBuilder : MonoBehaviour
 
                 // temporary
                 //System.Threading.Thread.Sleep(200);
+
+                yield return null;
             }
         }
 
         _infoTextLarge.text = $"";
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="i"></param>
+    /// <returns></returns>
+    //*************************************************************************
     private MapTile GetOrCreateTile(int x, int y, int i)
     {
         if (_mapTiles.Any() && _mapTiles.Count > i)
