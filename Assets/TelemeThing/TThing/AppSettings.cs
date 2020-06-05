@@ -56,6 +56,12 @@ public class AppSettings
             TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 70, "The number of tiles per edge (-1 because center tile)"),
         };
 
+    public RosSettings RosSettings =
+        new RosSettings()
+        {
+            RosBridgeUrl = new AppSetting("RosBridgeUrl", "ws://192.168.1.30:9090", "The URLof the RosBridge server")
+        };
+
     List<AppSettingsBase> _settingCollections = new List<AppSettingsBase>();
 
     //*************************************************************************
@@ -671,6 +677,26 @@ public class TerrainSettings : AppSettingsBase
     public AppSetting TerrainZoomLevel { get; set; }
 
     public AppSetting TerrainTilesPerSide { get; set; }
+}
+
+//*****************************************************************************
+/// <summary>
+/// 
+/// </summary>
+//*****************************************************************************
+public class RosSettings : AppSettingsBase
+{
+    public new AppSettingCollection AppSettings
+    {
+        get
+        {
+            base._appSettings = new AppSettingCollection("ROS", "ROS Settings",
+            new List<AppSetting>() { RosBridgeUrl });
+            return base._appSettings;
+        }
+    }
+
+    public AppSetting RosBridgeUrl { get; set; }
 }
 
 #endregion
