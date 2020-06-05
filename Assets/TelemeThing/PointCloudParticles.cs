@@ -7,6 +7,23 @@ using std_msgs = RosSharp.RosBridgeClient.MessageTypes.Std;
 using System.Threading.Tasks;
 using System;
 
+public class PointCloudFrame
+{
+    public Vector3[] Points { set; get; } = new Vector3[1];
+    public Color[] Colors { set; get; } = new Color[1];
+
+    public int PointCount = 0;
+
+    public void Rightsize(int size)
+    {
+        if (size > Points.Length)
+            Points = new Vector3[size];
+
+        if (size > Colors.Length)
+            Colors = new Color[size];
+    }
+}
+
 public class PointCloudParticles : MonoBehaviour
 {
     ParticleSystem.Particle[] cloud;
@@ -15,6 +32,9 @@ public class PointCloudParticles : MonoBehaviour
     private UnityEngine.UI.Text _statusText = null;
     private Queue<Action> _exeQueue = new Queue<Action>();
     RosSocket rosSocket;
+    int _framesToDisplay = 10;
+    int _frameIndex = 0;
+    PointCloudFrame[] _pointCloudFrames;
 
     //*************************************************************************
     /// <summary>
@@ -25,9 +45,40 @@ public class PointCloudParticles : MonoBehaviour
     {
         _statusText = Utils.FindObjectComponentInScene<UnityEngine.UI.Text>("StatusText");
 
+        SetNumberOfFramesToDisplay(_framesToDisplay);
+
         var rosBridgeUrl = (string)AppSettings.App.RosSettings.RosBridgeUrl.Value;
         Task.Run(() => SetupRosBridge(rosBridgeUrl));
 
+        //DisplayTestCloud();
+
+        ps = GetComponent<ParticleSystem>();
+
+        T1.CLogger.LogThis("ThingsManager.Start()");
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="frameCount"></param>
+    //*************************************************************************
+    private void SetNumberOfFramesToDisplay(int frameCount)
+    {
+        _frameIndex = 0;
+        _pointCloudFrames = new PointCloudFrame[frameCount];
+
+        for (int index = 0; index < frameCount; index++)
+            _pointCloudFrames[index] = new PointCloudFrame();
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    //*************************************************************************
+    void DisplayTestCloud()
+    {
         float v = 1.0f;
 
         Vector3[] pos = new Vector3[4];
@@ -43,15 +94,13 @@ public class PointCloudParticles : MonoBehaviour
         colors[3] = new Color32(255, 100, 0, 255);
 
         SetPoints(pos, colors, pos.Length);
-
-        ps = GetComponent<ParticleSystem>();
     }
 
     //*************************************************************************
     /// <summary>
     /// 
     /// </summary>
-    //*************************************************************************rosbag 
+    //*************************************************************************
     void Update()
     {
         if (bPointsUpdated)
@@ -84,6 +133,48 @@ public class PointCloudParticles : MonoBehaviour
             cloud[ii].position = positions[ii];
             cloud[ii].startColor = colors[ii];
             cloud[ii].startSize = 0.1f;
+        }
+
+        bPointsUpdated = true;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="pointCloudFrame"></param>
+    //*************************************************************************
+    public void SetPoints(PointCloudFrame pointCloudFrame)
+    {
+        SetPoints(pointCloudFrame.Points, pointCloudFrame.Colors, pointCloudFrame.PointCount);
+        bPointsUpdated = true;
+    }
+
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="pointCloudFrames"></param>
+    //*************************************************************************
+    public void SetPoints(PointCloudFrame[] pointCloudFrames)
+    {
+        int totalLength = 0;
+        int ci = 0;
+
+        foreach(var pcf in pointCloudFrames)
+            totalLength += pcf.PointCount;
+
+        cloud = new ParticleSystem.Particle[totalLength];
+
+        foreach (var pcf in pointCloudFrames)
+        {
+            for (int pi = 0; pi < pcf.PointCount; ++pi)
+            {
+                cloud[ci].position = pcf.Points[pi];
+                cloud[ci].startColor = pcf.Colors[pi];
+                cloud[ci].startSize = 0.1f;
+                ci++;
+            }
         }
 
         bPointsUpdated = true;
@@ -128,10 +219,8 @@ public class PointCloudParticles : MonoBehaviour
     private long pointCloudAccumulatedSize = 0;
 
     private void PointCloudSubscriptionHandler(
-        RosSharp.RosBridgeClient.MessageTypes.Sensor.PointCloud2 pc)
+    RosSharp.RosBridgeClient.MessageTypes.Sensor.PointCloud2 pc)
     {
-        Vector3[] points;
-        Color[] colors;
         pointCloudAccumulatedSize += pc.data.Length;
 
         var statusMessage = 
@@ -140,14 +229,28 @@ public class PointCloudParticles : MonoBehaviour
         System.Diagnostics.Debug.WriteLine(statusMessage);
         _exeQueue.Enqueue(() => _statusText.text = statusMessage);
 
-        var count = ExtractPoints(pc, out points, out colors);
+        var count = ExtractPoints(pc, _pointCloudFrames[_frameIndex++]);
+        if (_frameIndex == _framesToDisplay)
+            _frameIndex = 0;
 
-        SetPoints(points, colors, count);
+        //SetPoints(_pointCloudFrame.Points, _pointCloudFrame.Colors, count);
+        //SetPoints(_pointCloudFrames[0]);
+        SetPoints(_pointCloudFrames);
+
     }
 
+    //*************************************************************************
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="pc"></param>
+    /// <param name="points"></param>
+    /// <param name="colors"></param>
+    /// <returns></returns>
+    //*************************************************************************
     private int ExtractPoints(
-        RosSharp.RosBridgeClient.MessageTypes.Sensor.PointCloud2 pc, 
-        out Vector3[] points, out Color[] colors)
+        RosSharp.RosBridgeClient.MessageTypes.Sensor.PointCloud2 pc,
+        PointCloudFrame pointCloudFrame)
     {
         int dataIndex = 0;
         int pointIndex = 0;
@@ -156,9 +259,10 @@ public class PointCloudParticles : MonoBehaviour
         bool skip = false;
         float x, y, z;
 
-        points = new Vector3[pc.width];
-        colors = new Color[pc.width];
-        
+        pointCloudFrame.Rightsize((int)pc.width);
+        var points = pointCloudFrame.Points;
+        var colors = pointCloudFrame.Colors;
+
         for (int index = 0; index < pc.width; index++)
         {
             x = BitConverter.ToSingle(pc.data, dataIndex);
@@ -180,14 +284,29 @@ public class PointCloudParticles : MonoBehaviour
             {
                 float i = BitConverter.ToSingle(pc.data, dataIndex + (dataLen * 3));
 
-                points[pointIndex] = new Vector3(x, y, z);
-                colors[pointIndex++] = new Color(255,0,0,255);
-            }
+                if (null == points[pointIndex])
+                {
+                    points[pointIndex] = new Vector3(x, y, z);
+                    colors[pointIndex] = new Color(255, 0, 0, 255);
+                }
+                else
+                {
+                    points[pointIndex].x = x;
+                    points[pointIndex].y = y;
+                    points[pointIndex].z = z;
+                    colors[pointIndex].r = 255;
+                    colors[pointIndex].g = 0;
+                    colors[pointIndex].b = 0;
+                    colors[pointIndex].a = 255;
+                }
 
+                pointIndex++;
+            }
 
             dataIndex += (int)pc.point_step;
         }
 
+        pointCloudFrame.PointCount = pointIndex;
         return pointIndex;
     }
 
