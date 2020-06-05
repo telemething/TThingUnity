@@ -181,26 +181,40 @@ public class ThingMotion
     private void ReceiveData()
     {
         T1.CLogger.LogThis("ReceiveData() : called");
+        IPEndPoint anyIp = null;
 
-        var groupEp = new IPEndPoint(IPAddress.Any, _port);
-        //_client = new UdpClient(_port);
-        _client = new UdpClient {ExclusiveAddressUse = false, EnableBroadcast = true};
-
-        _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, false);
-        _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-
-        _client.Client.Bind(groupEp);
-        
-        var anyIp = new IPEndPoint(IPAddress.Any, 0);
-
-        switch (_mode)
+        try
         {
-            case modeEnum.motion:
-                _motion = new MotionLib.Motion();
-                break;
-            case modeEnum.pose:
-                _motion = new MotionLib.Motion();
-                break;
+
+            var groupEp = new IPEndPoint(IPAddress.Any, _port);
+            //_client = new UdpClient(_port);
+            _client = new UdpClient { ExclusiveAddressUse = false, EnableBroadcast = true };
+            //_client = new UdpClient { EnableBroadcast = true };
+            //_client = new UdpClient();
+            //_client = new UdpClient(_port);
+
+
+            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, false);
+            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+            _client.Client.Bind(groupEp);
+
+            anyIp = new IPEndPoint(IPAddress.Any, 0);
+
+            switch (_mode)
+            {
+                case modeEnum.motion:
+                    _motion = new MotionLib.Motion();
+                    break;
+                case modeEnum.pose:
+                    _motion = new MotionLib.Motion();
+                    break;
+            }
+        }
+        catch( Exception ex )
+        {
+            T1.CLogger.LogThis("ReceiveData() Setup : exception : " + ex.Message);
+            //TODO : setup a connection event callback
         }
 
         while (true)
@@ -227,10 +241,10 @@ public class ThingMotion
                         break;
                 }
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                T1.CLogger.LogThis("ReceiveData() : exception");
-                print(err.ToString());
+                T1.CLogger.LogThis("ReceiveData() Loop : exception : " + ex.Message);
+                //TODO : setup a connection event callback
             }
         }
     }

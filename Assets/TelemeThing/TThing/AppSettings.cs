@@ -32,7 +32,7 @@ public class AppSettings
             PlaceObjectsAboveTerrain = new AppSetting("PlaceObjectsAboveTerrain", true, "PlaceObjectsAboveTerrain"),
             DefaultLerpTimeSpan = new AppSetting("DefaultLerpTimeSpan", 1.0f, "DefaultLerpTimeSpan"),
             UseFlatTerrain = new AppSetting("UseFlatTerrain", false, "If true, will use a flat plane, otherwise will use a GEO plane"),
-            HaloScaleFactor = new AppSetting("HaloScaleFactor", 16f, "HaloScaleFactor")
+            HaloScaleFactor = new AppSetting("HaloScaleFactor", 8f, "HaloScaleFactor")
         };
 
     public UavObjectSettings UavObjectSettings =
@@ -53,7 +53,7 @@ public class AppSettings
         {
             TerrainZoomLevel = new AppSetting("TerrainZoomLevel", 18, "The zoom level fetched from the tile server"),
             //TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 92, "The number of tiles per edge (-1 because center tile)"),
-            TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 80, "The number of tiles per edge (-1 because center tile)"),
+            TerrainTilesPerSide = new AppSetting("TerrainTilesPerSide", 70, "The number of tiles per edge (-1 because center tile)"),
         };
 
     List<AppSettingsBase> _settingCollections = new List<AppSettingsBase>();

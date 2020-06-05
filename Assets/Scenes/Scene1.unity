@@ -3322,6 +3322,11 @@ PrefabInstance:
       propertyPath: OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 2047127755}
+    - target: {fileID: 3009022624284531776, guid: 40b588bd40632eb41a0af374d91c4fc9,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.1502
+      objectReference: {fileID: 0}
     - target: {fileID: 3515418990045158255, guid: 40b588bd40632eb41a0af374d91c4fc9,
         type: 3}
       propertyPath: m_Name
@@ -3330,7 +3335,7 @@ PrefabInstance:
     - target: {fileID: 3515418990045158255, guid: 40b588bd40632eb41a0af374d91c4fc9,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3643836643929629566, guid: 40b588bd40632eb41a0af374d91c4fc9,
         type: 3}
@@ -3482,6 +3487,11 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 115e8a36a794d414d96ca3ae31a090fe, type: 2}
+    - target: {fileID: 5760319780102256040, guid: 40b588bd40632eb41a0af374d91c4fc9,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.2
+      objectReference: {fileID: 0}
     - target: {fileID: 5972206227985548477, guid: 40b588bd40632eb41a0af374d91c4fc9,
         type: 3}
       propertyPath: m_textInfo.characterCount
@@ -3545,12 +3555,17 @@ PrefabInstance:
     - target: {fileID: 6376582067664713665, guid: 40b588bd40632eb41a0af374d91c4fc9,
         type: 3}
       propertyPath: useFixedVerticalPosition
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6376582067664713665, guid: 40b588bd40632eb41a0af374d91c4fc9,
         type: 3}
       propertyPath: ignoreDistanceClamp
-      value: 1
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6379754230260484954, guid: 40b588bd40632eb41a0af374d91c4fc9,
+        type: 3}
+      propertyPath: autoFollowAtDistance
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7268576271103250073, guid: 40b588bd40632eb41a0af374d91c4fc9,
         type: 3}
@@ -3965,6 +3980,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 449972571217883106, guid: 242480c28a45557419e3e5ba70258b22,
+        type: 3}
+      propertyPath: enabledOnStart
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 891521884958840777, guid: 242480c28a45557419e3e5ba70258b22,
         type: 3}
       propertyPath: m_text
@@ -4093,7 +4113,12 @@ PrefabInstance:
     - target: {fileID: 4310971674178986660, guid: 242480c28a45557419e3e5ba70258b22,
         type: 3}
       propertyPath: useFixedVerticalPosition
-      value: 1
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5394890505152455195, guid: 242480c28a45557419e3e5ba70258b22,
+        type: 3}
+      propertyPath: autoFollowAtDistance
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5914302433025485050, guid: 242480c28a45557419e3e5ba70258b22,
         type: 3}
